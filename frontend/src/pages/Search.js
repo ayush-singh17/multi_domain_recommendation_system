@@ -1,5 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import Tippy from '@tippyjs/react';
+import 'tippy.js/dist/tippy.css';
+import 'tippy.js/animations/scale.css';
 import API from '../api/axios';
 
 const FOCUS_OPTIONS = [
@@ -29,24 +32,32 @@ const KEYWORD_LOADING_STEPS = [
 
 const MAX_KEYWORDS = 10;
 
-// ── Tooltip component ────────────────────────────────────────────────────────
-// Pure CSS-driven — no portal, no JS positioning, no library.
-// Placement: 'top' (default) | 'bottom' | 'left' | 'right'
-function Tooltip({ text, placement = 'top', children, maxWidth = 220, className = '', style = {} }) {
+// ── Tippy glassmorphic wrapper ────────────────────────────────────────────────
+// Wraps @tippyjs/react with the custom "glass" theme and consistent defaults.
+function Tip({ content, placement = 'top', maxWidth = 220, children }) {
   return (
-    <span className={`tooltip-wrap tooltip-${placement} ${className}`} style={style}>
+    <Tippy
+      content={content}
+      placement={placement}
+      theme="glass"
+      animation="scale"
+      arrow={true}
+      maxWidth={maxWidth}
+      delay={[80, 60]}
+      duration={[220, 180]}
+      inertia={true}
+      offset={[0, 10]}
+    >
+      {/* Tippy requires a single DOM element child */}
       {children}
-      <span className="tooltip-bubble" style={{ maxWidth }}>
-        {text}
-      </span>
-    </span>
+    </Tippy>
   );
 }
 
 // ── Info icon with tooltip (for labels) ──────────────────────────────────────
-function InfoTip({ text, placement = 'top' }) {
+function InfoTip({ content, placement = 'top' }) {
   return (
-    <Tooltip text={text} placement={placement}>
+    <Tip content={content} placement={placement} maxWidth={240}>
       <span className="info-tip-icon" aria-label="More info" tabIndex={0}>
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" opacity=".5"/>
@@ -54,7 +65,7 @@ function InfoTip({ text, placement = 'top' }) {
           <circle cx="8" cy="5" r=".8" fill="currentColor"/>
         </svg>
       </span>
-    </Tooltip>
+    </Tip>
   );
 }
 
@@ -259,9 +270,10 @@ export default function Search() {
 
             {/* ── Mode tab switcher ── */}
             <div className="search-mode-tabs">
-              <Tooltip
-                text="Paste your full manuscript abstract for the deepest semantic matching. BERT reads meaning, not just keywords."
+              <Tip
+                content="Paste your full manuscript abstract for the deepest semantic matching. BERT reads meaning, not just keywords."
                 placement="bottom"
+                maxWidth={260}
               >
                 <button
                   type="button"
@@ -278,11 +290,12 @@ export default function Search() {
                   </svg>
                   Abstract
                 </button>
-              </Tooltip>
+              </Tip>
 
-              <Tooltip
-                text="Type individual research topics — they're automatically expanded into semantic context before ranking journals."
+              <Tip
+                content="Type individual research topics — they're automatically expanded into semantic context before ranking journals."
                 placement="bottom"
+                maxWidth={260}
               >
                 <button
                   type="button"
@@ -299,7 +312,7 @@ export default function Search() {
                   </svg>
                   Keywords
                 </button>
-              </Tooltip>
+              </Tip>
             </div>
 
             {/* ── Abstract mode ── */}
@@ -309,7 +322,7 @@ export default function Search() {
                   <span style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
                     Manuscript Abstract
                     <InfoTip
-                      text="Paste your research abstract (100–250 words). The BERT model reads the full semantic meaning — more context gives significantly better journal matches."
+                      content="Paste your research abstract (100–250 words). The BERT model reads the full semantic meaning — more context gives significantly better journal matches."
                       placement="right"
                     />
                   </span>
@@ -319,11 +332,10 @@ export default function Search() {
                   }
                 </div>
 
-                <Tooltip
-                  text="Aim for 100–250 words. The system uses BERT's 512-token window — longer abstracts are truncated. Short text gives weaker results."
+                <Tip
+                  content="Aim for 100–250 words. The system uses BERT's 512-token window — longer abstracts are truncated. Short text gives weaker results."
                   placement="right"
                   maxWidth={260}
-                  className="w-full"
                 >
                   <textarea
                     className="abstract-input"
@@ -333,7 +345,7 @@ export default function Search() {
                     rows={7}
                     disabled={loading}
                   />
-                </Tooltip>
+                </Tip>
 
                 {/* Word count bar */}
                 {abstract.trim() && (() => {
@@ -369,7 +381,7 @@ export default function Search() {
                   <span style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
                     Research Keywords
                     <InfoTip
-                      text="Add up to 10 keywords describing your research topic. They'll be expanded into a full semantic sentence before being matched against all 29,553 journals."
+                      content="Add up to 10 keywords describing your research topic. They'll be expanded into a full semantic sentence before being matched against all 29,553 journals."
                       placement="right"
                     />
                   </span>
@@ -379,18 +391,19 @@ export default function Search() {
                   }
                 </div>
 
-                <Tooltip
-                  text="Press Enter or comma after each keyword. Paste a comma-separated list to add all at once. Backspace removes the last chip. Duplicates are ignored."
+                <Tip
+                  content="Press Enter or comma after each keyword. Paste a comma-separated list to add all at once. Backspace removes the last chip. Duplicates are ignored."
                   placement="right"
                   maxWidth={270}
-                  className="w-full"
                 >
-                  <KeywordInput
-                    keywords={keywords}
-                    setKeywords={setKeywords}
-                    disabled={loading}
-                  />
-                </Tooltip>
+                  <div style={{ display: 'block', width: '100%' }}>
+                    <KeywordInput
+                      keywords={keywords}
+                      setKeywords={setKeywords}
+                      disabled={loading}
+                    />
+                  </div>
+                </Tip>
 
                 {/* Keyword count bar */}
                 <div style={{marginTop:'.6rem', display:'flex', alignItems:'center', gap:'.75rem'}}>
@@ -440,15 +453,14 @@ export default function Search() {
                 <label className="focus-label" style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
                   Focus Filter
                   <InfoTip
-                    text="Narrows results to journals that primarily publish in a specific domain. 'General / Best Fit' considers all fields and picks the best match regardless of discipline."
+                    content="Narrows results to journals that primarily publish in a specific domain. 'General / Best Fit' considers all fields and picks the best match regardless of discipline."
                     placement="top"
                   />
                 </label>
-                <Tooltip
-                  text="Select a domain to prioritise journals in that field. Useful if your paper spans disciplines but you want to target a specific community."
+                <Tip
+                  content="Select a domain to prioritise journals in that field. Useful if your paper spans disciplines but you want to target a specific community."
                   placement="top"
                   maxWidth={250}
-                  className="w-full"
                 >
                   <select
                     className="focus-select"
@@ -458,11 +470,11 @@ export default function Search() {
                   >
                     {FOCUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
-                </Tooltip>
+                </Tip>
               </div>
 
-              <Tooltip
-                text={
+              <Tip
+                content={
                   searchMode === 'keyword'
                     ? 'Runs your keywords through semantic expansion then ranks all 29,553 journals using BM25 + BERT hybrid scoring.'
                     : 'Runs BM25 keyword matching + BERT semantic ranking simultaneously across 29,553 journals, then combines scores for the best results.'
@@ -482,7 +494,7 @@ export default function Search() {
                       : '🔍 Execute Neural Search →'
                   }
                 </button>
-              </Tooltip>
+              </Tip>
             </div>
 
             {/* ── Result filters ── */}
@@ -493,13 +505,13 @@ export default function Search() {
                 </svg>
                 Result Filters
                 <InfoTip
-                  text="Optional pre-filters applied to results. Only journals meeting both thresholds will be shown. Leave blank to see all matches."
+                  content="Optional pre-filters applied to results. Only journals meeting both thresholds will be shown. Leave blank to see all matches."
                   placement="right"
                 />
               </span>
 
-              <Tooltip
-                text="H-index reflects a journal's cumulative impact — the number h such that h papers have each been cited at least h times. Higher values indicate a more influential journal. Typical Q1 journals: H-index > 100."
+              <Tip
+                content="H-index reflects a journal's cumulative impact — the number h such that h papers have each been cited at least h times. Higher values indicate a more influential journal. Typical Q1 journals: H-index > 100."
                 placement="top"
                 maxWidth={290}
               >
@@ -515,10 +527,10 @@ export default function Search() {
                     onChange={e => setMinHIndex(e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value) || 0))}
                   />
                 </div>
-              </Tooltip>
+              </Tip>
 
-              <Tooltip
-                text="SJR (SCImago Journal Rank) weights each citation by the prestige of the journal that cited it — similar to Google PageRank for journals. Values > 1.0 indicate above-average influence."
+              <Tip
+                content="SJR (SCImago Journal Rank) weights each citation by the prestige of the journal that cited it — similar to Google PageRank for journals. Values > 1.0 indicate above-average influence."
                 placement="top"
                 maxWidth={290}
               >
@@ -535,7 +547,7 @@ export default function Search() {
                     onChange={e => setMinSJR(e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0))}
                   />
                 </div>
-              </Tooltip>
+              </Tip>
 
               {(minHIndex > 0 || minSJR > 0) && (
                 <button
@@ -568,14 +580,14 @@ export default function Search() {
               { num: '29,553', label: 'Indexed Journals',  green: false, placement: 'top-start' },
               { num: '3-Tier', label: 'Strategy Plans',    green: false, placement: 'top' },
               { num: 'BERT',   label: 'Semantic Matching', green: true,  placement: 'top' },
-              { num: 'Q1–Q4',  label: 'Quartile Coverage', green: false, placement: 'top' },
+              { num: 'Q1–Q4',  label: 'Quartile Coverage', green: false, placement: 'top-end' },
             ].map(s => (
-              <Tooltip key={s.label} text={STAT_TIPS[s.label]} placement={s.placement} maxWidth={240} className="w-full">
+              <Tip key={s.label} content={STAT_TIPS[s.label]} placement={s.placement} maxWidth={240}>
                 <div className="stat-strip-item">
                   <div className={'stat-strip-num' + (s.green ? ' green' : '')}>{s.num}</div>
                   <div className="stat-strip-label">{s.label}</div>
                 </div>
-              </Tooltip>
+              </Tip>
             ))}
           </div>
         )}
@@ -586,21 +598,33 @@ export default function Search() {
         <div className="neural-canvas">
           <NeuralViz />
 
-          <Tooltip text="BERT (Bidirectional Encoder Representations from Transformers) reads your full abstract and encodes its meaning into a 768-dimensional vector for deep semantic matching." placement="left" maxWidth={260} className="float-card float-card-1">
-            <div className="float-card-icon green">🧠</div>
-            <div>
-              <div className="float-card-label">Semantic Engine</div>
-              <div className="float-card-value">BERT Implemented</div>
+          <Tip
+            content="BERT (Bidirectional Encoder Representations from Transformers) reads your full abstract and encodes its meaning into a 768-dimensional vector for deep semantic matching."
+            placement="left"
+            maxWidth={260}
+          >
+            <div className="float-card float-card-1">
+              <div className="float-card-icon green">🧠</div>
+              <div>
+                <div className="float-card-label">Semantic Engine</div>
+                <div className="float-card-value">BERT Implemented</div>
+              </div>
             </div>
-          </Tooltip>
+          </Tip>
 
-          <Tooltip text="BM25 handles keyword frequency matching while BERT captures deeper meaning. Both scores are normalised and combined into a single hybrid relevance score." placement="right" maxWidth={260} className="float-card float-card-2">
-            <div className="float-card-icon indigo">⚡</div>
-            <div>
-              <div className="float-card-label">Ranking Model</div>
-              <div className="float-card-value">BM25 + BERT Hybrid</div>
+          <Tip
+            content="BM25 handles keyword frequency matching while BERT captures deeper meaning. Both scores are normalised and combined into a single hybrid relevance score."
+            placement="right"
+            maxWidth={260}
+          >
+            <div className="float-card float-card-2">
+              <div className="float-card-icon indigo">⚡</div>
+              <div>
+                <div className="float-card-label">Ranking Model</div>
+                <div className="float-card-value">BM25 + BERT Hybrid</div>
+              </div>
             </div>
-          </Tooltip>
+          </Tip>
         </div>
       </div>
 

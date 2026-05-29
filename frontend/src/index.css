@@ -98,142 +98,92 @@ a:hover { color: var(--primary-dark); }
 .animate-fade-up-4 { animation: fadeUp .5s .4s ease both; }
 .animate-fade-in   { animation: fadeIn .4s ease both; }
 
-/* ── Tooltip system ──────────────────────────────────────────────────────────── */
-.tooltip-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
+/* ── Tippy.js — Apple Liquid Glass theme ────────────────────────────────────
+   Replicates Apple's visionOS / iOS 26 "liquid glass" material:
+   - Ultra-translucent substrate (~18% white)
+   - Heavy backdrop blur (48px) for strong frosting
+   - Specular highlight border: bright white top edge, fades to transparent
+   - Inner shimmer gradient on the top surface
+   - Layered realistic shadow system
+   - Crisp dark text floats cleanly on the glass
+──────────────────────────────────────────────────────────────────────────── */
+
+.tippy-box[data-theme~='glass'] {
+  /* Substrate — very translucent, like real glass */
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.12) 60%,
+    rgba(220, 228, 240, 0.10) 100%
+  );
+
+  /* Heavy frosted blur — the hallmark of Apple glass */
+  backdrop-filter: blur(48px) saturate(180%) brightness(1.08);
+  -webkit-backdrop-filter: blur(48px) saturate(180%) brightness(1.08);
+
+  /* Typography */
+  color: #0F1114;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, var(--font-body), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 450;
+  line-height: 1.6;
+  letter-spacing: 0.006em;
+  text-align: left;
+
+  /* Geometry */
+  border-radius: 14px;
+  overflow: hidden;
+
+  /* Specular border — bright top/left edge, dark bottom/right edge
+     mimics the rim lighting on real glass */
+  border: 1px solid transparent;
+  background-clip: padding-box;
+
+  /* Shadow system:
+     1. Tight contact shadow (grounding)
+     2. Soft ambient spread
+     3. Specular inset highlights (top-left bright, bottom-right subtle dark rim) */
+  box-shadow:
+    0 1px 2px  rgba(0, 0, 0, 0.10),
+    0 6px 20px rgba(0, 0, 0, 0.13),
+    0 20px 48px rgba(0, 0, 0, 0.10),
+    inset 0  1px 0   rgba(255, 255, 255, 0.72),  /* top specular highlight  */
+    inset 0 -1px 0   rgba(0,   0,   0,   0.06),  /* bottom grounding edge   */
+    inset 1px 0  0   rgba(255, 255, 255, 0.32),  /* left specular edge      */
+    inset -1px 0 0   rgba(0,   0,   0,   0.04);  /* right grounding edge    */
 }
 
-/* Full-width block wrapper utility for layout-sensitive wrapped children */
-.tooltip-wrap.w-full {
-  display: flex;
-  width: 100%;
-}
-.tooltip-wrap.w-full > *:not(.tooltip-bubble) {
-  width: 100%;
-}
-
-/* The bubble itself */
-.tooltip-bubble {
+/* Inner shimmer surface layer — refractive light at the top */
+.tippy-box[data-theme~='glass']::before {
+  content: '';
   pointer-events: none;
   position: absolute;
-  z-index: 9999;
-  width: max-content;
-  max-width: 220px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  color: #191C1E;
-  font-family: 'Inter', var(--font-body), sans-serif;
-  font-size: 0.812rem; /* 13px */
-  font-weight: 400;
-  line-height: 1.55;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  box-shadow: 0px 20px 40px rgba(25, 28, 30, 0.04);
-  border: 1px solid rgba(192, 199, 209, 0.15);
-  letter-spacing: .005em;
-  opacity: 0;
-  transition: opacity .18s ease, transform .18s ease;
-  white-space: normal;
-  text-align: left;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.30) 0%,
+    rgba(255, 255, 255, 0.00) 55%
+  );
+  z-index: 0;
 }
 
-/* Arrow shared */
-.tooltip-bubble::after {
-  content: '';
-  position: absolute;
-  width: 8px; height: 8px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(192, 199, 209, 0.15);
-  transform: rotate(45deg);
+/* Content sits above the shimmer layer */
+.tippy-box[data-theme~='glass'] .tippy-content {
+  position: relative;
+  z-index: 1;
+  padding: 0.6rem 0.85rem;
+  color: #0F1114;
 }
 
-/* Show on hover */
-.tooltip-wrap:hover .tooltip-bubble {
-  opacity: 1;
+/* Arrow — match the glass tint */
+.tippy-box[data-theme~='glass'] .tippy-arrow {
+  color: rgba(255, 255, 255, 0.22);
 }
-
-/* ── TOP ── */
-.tooltip-top .tooltip-bubble {
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-}
-.tooltip-wrap:hover.tooltip-top .tooltip-bubble,
-.tooltip-wrap:hover .tooltip-top .tooltip-bubble,
-.tooltip-top:hover .tooltip-bubble {
-  transform: translateX(-50%) translateY(0);
-}
-.tooltip-top .tooltip-bubble::after {
-  bottom: -5px; left: 50%; margin-left: -4px;
-  border-top: none; border-left: none;
-}
-
-/* ── TOP START (For left-edge elements, bubble extends to the right) ── */
-.tooltip-top-start .tooltip-bubble {
-  bottom: calc(100% + 10px);
-  left: 0;
-  transform: translateY(4px);
-}
-.tooltip-wrap:hover.tooltip-top-start .tooltip-bubble,
-.tooltip-wrap:hover .tooltip-top-start .tooltip-bubble,
-.tooltip-top-start:hover .tooltip-bubble {
-  transform: translateY(0);
-}
-.tooltip-top-start .tooltip-bubble::after {
-  bottom: -5px; left: 20px;
-  border-top: none; border-left: none;
-}
-
-/* ── BOTTOM ── */
-.tooltip-bottom .tooltip-bubble {
-  top: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%) translateY(-4px);
-}
-.tooltip-wrap:hover.tooltip-bottom .tooltip-bubble,
-.tooltip-wrap:hover .tooltip-bottom .tooltip-bubble,
-.tooltip-bottom:hover .tooltip-bubble {
-  transform: translateX(-50%) translateY(0);
-}
-.tooltip-bottom .tooltip-bubble::after {
-  top: -5px; left: 50%; margin-left: -4px;
-  border-bottom: none; border-right: none;
-}
-
-/* ── LEFT ── */
-.tooltip-left .tooltip-bubble {
-  right: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%) translateX(4px);
-}
-.tooltip-wrap:hover.tooltip-left .tooltip-bubble,
-.tooltip-wrap:hover .tooltip-left .tooltip-bubble,
-.tooltip-left:hover .tooltip-bubble {
-  transform: translateY(-50%) translateX(0);
-}
-.tooltip-left .tooltip-bubble::after {
-  right: -5px; top: 50%; margin-top: -4px;
-  border-left: none; border-bottom: none;
-}
-
-/* ── RIGHT ── */
-.tooltip-right .tooltip-bubble {
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%) translateX(-4px);
-}
-.tooltip-wrap:hover.tooltip-right .tooltip-bubble,
-.tooltip-wrap:hover .tooltip-right .tooltip-bubble,
-.tooltip-right:hover .tooltip-bubble {
-  transform: translateY(-50%) translateX(0);
-}
-.tooltip-right .tooltip-bubble::after {
-  left: -5px; top: 50%; margin-top: -4px;
-  border-right: none; border-top: none;
-}
+.tippy-box[data-theme~='glass'][data-placement^='top']    .tippy-arrow::before { border-top-color:    rgba(255,255,255,0.22); }
+.tippy-box[data-theme~='glass'][data-placement^='bottom'] .tippy-arrow::before { border-bottom-color: rgba(255,255,255,0.22); }
+.tippy-box[data-theme~='glass'][data-placement^='left']   .tippy-arrow::before { border-left-color:   rgba(255,255,255,0.22); }
+.tippy-box[data-theme~='glass'][data-placement^='right']  .tippy-arrow::before { border-right-color:  rgba(255,255,255,0.22); }
 
 /* ── Info tip icon ──────────────────────────────────────────────────────────── */
 .info-tip-icon {
