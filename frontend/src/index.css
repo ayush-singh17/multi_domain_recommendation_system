@@ -91,12 +91,369 @@ a:hover { color: var(--primary-dark); }
 @keyframes float     { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-8px) } }
 @keyframes nodesPulse{ 0%,100% { opacity:.6 } 50% { opacity:1 } }
 
+/* ── Roaming Bot keyframes ──────────────────────────────────────────────────── */
+@keyframes botWobble  { 0%,100% { transform:translateY(0) rotate(0deg) } 25% { transform:translateY(-3px) rotate(-2deg) } 75% { transform:translateY(-3px) rotate(2deg) } }
+@keyframes armSwingL  { 0%,100% { transform:rotate(0deg)  } 50% { transform:rotate(30deg)  } }
+@keyframes armSwingR  { 0%,100% { transform:rotate(0deg)  } 50% { transform:rotate(-30deg) } }
+@keyframes legSwingL  { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-4px) } }
+@keyframes legSwingR  { 0%,100% { transform:translateY(0) } 25% { transform:translateY(-4px) } }
+@keyframes bubblePop  { 0% { opacity:0; transform:translateY(6px) scale(.92) } 15% { opacity:1; transform:translateY(0) scale(1) } 85% { opacity:1 } 100% { opacity:0 } }
+@keyframes menuSlide  { from { opacity:0; transform:translateY(8px) scale(.95) } to { opacity:1; transform:translateY(0) scale(1) } }
+@keyframes helpSlide  { from { opacity:0; transform:translateY(24px) } to { opacity:1; transform:translateY(0) } }
+@keyframes botPulse   { 0%,100% { box-shadow: 0 0 0 0 rgba(92,107,255,.5) } 50% { box-shadow: 0 0 0 10px rgba(92,107,255,0) } }
+
 .animate-fade-up   { animation: fadeUp .5s ease both; }
 .animate-fade-up-1 { animation: fadeUp .5s .1s ease both; }
 .animate-fade-up-2 { animation: fadeUp .5s .2s ease both; }
 .animate-fade-up-3 { animation: fadeUp .5s .3s ease both; }
 .animate-fade-up-4 { animation: fadeUp .5s .4s ease both; }
 .animate-fade-in   { animation: fadeIn .4s ease both; }
+
+/* ── Roaming Bot ─────────────────────────────────────────────────────────────── */
+.roam-bot-wrap {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;         /* children opt-in */
+  /* Slow, lazy drift — feels organic, not mechanical */
+  transition: left 3.2s cubic-bezier(.25,.1,.25,1),
+              top  3.2s cubic-bezier(.25,.1,.25,1),
+              transform .3s ease;
+  will-change: left, top;
+}
+
+.roam-bot-wrap.roam-moving .roam-bot-svg {
+  animation: botWobble .45s ease-in-out infinite;
+}
+
+/* Walking limb animations */
+.roam-arm-l { animation: armSwingL .45s ease-in-out infinite; }
+.roam-arm-r { animation: armSwingR .45s ease-in-out infinite; }
+.roam-leg-l { animation: legSwingL .45s ease-in-out infinite; }
+.roam-leg-r { animation: legSwingR .45s ease-in-out infinite; }
+
+.roam-bot {
+  pointer-events: all;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: block;
+  filter: drop-shadow(0 6px 16px rgba(92,107,255,.45));
+  transition: filter .2s, transform .15s;
+  animation: botPulse 2.8s ease-in-out infinite;
+  border-radius: 50%;
+}
+.roam-bot:hover {
+  filter: drop-shadow(0 8px 24px rgba(92,107,255,.65));
+  transform: scale(1.08);
+}
+.roam-bot--active {
+  filter: drop-shadow(0 8px 24px rgba(92,107,255,.7));
+  transform: scale(1.05);
+  animation: none;
+}
+
+/* Speech bubble */
+.roam-bubble {
+  pointer-events: none;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #191C1E;
+  font-family: 'Inter', var(--font-body), sans-serif;
+  font-size: .78rem;
+  font-weight: 500;
+  padding: .45rem .85rem;
+  border-radius: 20px;
+  white-space: nowrap;
+  border: 1px solid rgba(192,199,209,.25);
+  box-shadow: 0 4px 16px rgba(0,0,0,.1), inset 0 1px 0 rgba(255,255,255,.7);
+  animation: bubblePop 3.5s ease forwards;
+}
+.roam-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%; left: 50%; transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(255,255,255,0.92);
+}
+
+/* Menu popup */
+.roam-menu {
+  pointer-events: all;
+  position: absolute;
+  /* Always opens to the LEFT of the mascot, vertically centred */
+  right: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  left: auto;
+  bottom: auto;
+  background: rgba(255,255,255,0.94);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(192,199,209,.22);
+  border-radius: 16px;
+  padding: .6rem;
+  min-width: 218px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08), 0 16px 48px rgba(0,0,0,.14),
+              inset 0 1px 0 rgba(255,255,255,.8);
+  animation: menuSlide .22s cubic-bezier(.34,1.56,.64,1) both;
+  display: flex; flex-direction: column; gap: .3rem;
+}
+
+.roam-menu-header {
+  font-family: 'Inter', var(--font-body), sans-serif;
+  font-size: .72rem;
+  font-weight: 600;
+  color: #64748B;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: .2rem .5rem .4rem;
+}
+
+.roam-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  padding: .6rem .7rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background .15s;
+  width: 100%;
+}
+.roam-menu-btn:hover {
+  background: rgba(92,107,255,.07);
+}
+.roam-menu-btn-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.roam-menu-btn-title {
+  font-family: 'Inter', var(--font-body), sans-serif;
+  font-size: .84rem;
+  font-weight: 600;
+  color: #0F1114;
+  line-height: 1.2;
+}
+.roam-menu-btn-sub {
+  font-family: 'Inter', var(--font-body), sans-serif;
+  font-size: .7rem;
+  color: #94A3B8;
+  margin-top: .15rem;
+}
+
+/* ── Help Panel ──────────────────────────────────────────────────────────────── */
+.roam-help-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  /* Rich dark glass overlay */
+  background: rgba(8, 10, 20, 0.55);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2.5rem;
+}
+.roam-help-panel {
+  /* Liquid glass — same family as the tooltips */
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.82) 0%,
+    rgba(255, 255, 255, 0.72) 60%,
+    rgba(230, 238, 255, 0.68) 100%
+  );
+  backdrop-filter: blur(40px) saturate(180%) brightness(1.06);
+  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.06);
+  border-radius: 22px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  box-shadow:
+    0 1px 2px  rgba(0,0,0,.06),
+    0 8px 32px rgba(0,0,0,.18),
+    0 32px 64px rgba(0,0,0,.12),
+    inset 0  1px 0   rgba(255,255,255,0.85),
+    inset 0 -1px 0   rgba(0,0,0,0.04),
+    inset 1px 0  0   rgba(255,255,255,0.45),
+    inset -1px 0 0   rgba(0,0,0,0.03);
+  width: min(520px, 94vw);
+  animation: helpSlide .28s cubic-bezier(.34,1.46,.64,1) both;
+  overflow: hidden;
+  position: relative;
+}
+/* Inner shimmer on help panel */
+.roam-help-panel::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 40%);
+  z-index: 0;
+  border-radius: inherit;
+}
+.roam-help-panel > * { position: relative; z-index: 1; }
+.roam-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem .8rem;
+  border-bottom: 1px solid rgba(0,0,0,.06);
+}
+.roam-help-title {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-family: 'Inter', var(--font-body), sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0F1114;
+}
+.roam-help-close {
+  background: rgba(0,0,0,.06);
+  border: none;
+  border-radius: 50%;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: .8rem;
+  color: #64748B;
+  transition: background .15s;
+}
+.roam-help-close:hover { background: rgba(0,0,0,.12); }
+
+.roam-help-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .1rem;
+  padding: .5rem .5rem;
+}
+.roam-help-item {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  padding: .75rem .85rem;
+  border-radius: 12px;
+  transition: background .15s;
+}
+.roam-help-item:hover { background: rgba(92,107,255,.05); }
+.roam-help-item-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  margin-top: .1rem;
+  flex-shrink: 0;
+}
+.roam-help-item-title {
+  font-family: 'Inter', var(--font-body), sans-serif;
+  font-size: .82rem;
+  font-weight: 600;
+  color: #0F1114;
+  margin-bottom: .2rem;
+}
+.roam-help-item-desc {
+  font-family: 'Inter', var(--font-body), sans-serif;
+  font-size: .72rem;
+  color: #64748B;
+  line-height: 1.5;
+}
+.roam-help-footer {
+  padding: .8rem 1.25rem 1.1rem;
+  border-top: 1px solid rgba(0,0,0,.06);
+}
+.roam-help-demo-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: .7rem 1rem;
+  font-family: 'Inter', var(--font-body), sans-serif;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .2s, transform .15s;
+}
+.roam-help-demo-btn:hover { opacity: .88; transform: translateY(-1px); }
+
+/* ── Driver.js popover overrides ─────────────────────────────────────────────── */
+.bot-driver-popover.driver-popover {
+  background: rgba(255,255,255,0.96) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(192,199,209,.22) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,.12), 0 1px 0 rgba(255,255,255,.8) inset !important;
+  max-width: 320px !important;
+}
+.bot-driver-popover .driver-popover-title {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .95rem !important;
+  font-weight: 700 !important;
+  color: #0F1114 !important;
+}
+.bot-driver-popover .driver-popover-description {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .8rem !important;
+  color: #475569 !important;
+  line-height: 1.6 !important;
+}
+.bot-driver-popover .driver-popover-progress-text {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .72rem !important;
+  color: #94A3B8 !important;
+}
+/* Next / Done buttons — solid filled, white text, no inheritance issues */
+.bot-driver-popover .driver-popover-next-btn,
+.bot-driver-popover .driver-popover-done-btn {
+  all: unset !important;                   /* wipe every inherited style */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #0369a1 !important;    /* var(--primary) hardcoded */
+  color: #fff !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: .78rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  padding: .42rem 1rem !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  box-shadow: 0 2px 8px rgba(3,105,161,.3) !important;
+  transition: opacity .15s !important;
+}
+.bot-driver-popover .driver-popover-next-btn:hover,
+.bot-driver-popover .driver-popover-done-btn:hover {
+  opacity: .88 !important;
+}
+/* Prev button */
+.bot-driver-popover .driver-popover-prev-btn {
+  all: unset !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: .78rem !important;
+  color: #64748B !important;
+  background: rgba(0,0,0,.05) !important;
+  border-radius: 8px !important;
+  padding: .42rem .9rem !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: background .15s !important;
+}
+.bot-driver-popover .driver-popover-prev-btn:hover {
+  background: rgba(0,0,0,.10) !important;
+}
+.driver-overlay { backdrop-filter: blur(1px) !important; }
+
 
 /* ── Tippy.js — Apple Liquid Glass theme ────────────────────────────────────
    Replicates Apple's visionOS / iOS 26 "liquid glass" material:

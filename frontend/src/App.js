@@ -6,6 +6,7 @@ import Search   from './pages/Search';
 import Results  from './pages/Results';
 import History  from './pages/History';
 import Navbar   from './components/Navbar';
+import RoamingBot from './components/RoamingBot';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -23,18 +24,21 @@ export default function App() {
           <PrivateRoute>
             <Navbar />
             <Search />
+            <RoamingBot />
           </PrivateRoute>
         } />
         <Route path="/results" element={
           <PrivateRoute>
             <Navbar />
             <Results />
+            <RoamingBot />
           </PrivateRoute>
         } />
         <Route path="/history" element={
           <PrivateRoute>
             <Navbar />
             <History />
+            <RoamingBot />
           </PrivateRoute>
         } />
       </Routes>
