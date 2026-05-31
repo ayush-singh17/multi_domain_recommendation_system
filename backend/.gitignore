@@ -1,23 +1,38 @@
-# Secrets — never commit these
+# ── Secrets — NEVER commit ────────────────────────────────────────────────────
 .env
+.env.*
+secrets.json
 
-# Python
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 .venv/
 venv/
+env/
+
+# ── ML artifacts ──────────────────────────────────────────────────────────────
 *.pkl
 *.npy
+*.pt
+*.pth
+*.bin
+*.onnx
+*.joblib
+*.h5
 
-# React
-node_modules/
-build/
-
-# Django
+# ── Django ────────────────────────────────────────────────────────────────────
 *.log
 db.sqlite3
+db.sqlite3-journal
+/staticfiles/
+/mediafiles/
 
-# OS
+# ── OS & editor junk ──────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~

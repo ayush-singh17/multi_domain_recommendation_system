@@ -1,30 +1,66 @@
-# Python
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.pyw
 
-# Virtual environments
+# ── Virtual environments ───────────────────────────────────────────────────────
 journal_env/
 venv/
 env/
 .venv/
+ENV/
 
-# Large model/data files
-*.npy
+# ── Secrets — NEVER commit ────────────────────────────────────────────────────
+.env
+.env.*
+*.secret
+secrets.json
+secrets.yaml
+
+# ── ML model & index artifacts (large binary files) ───────────────────────────
+*.npy           # journal_embeddings.npy (90 MB)
+*.pkl           # bm25_index.pkl, bert_texts.pkl
 *.pt
 *.pth
 *.bin
-*.pkl
+*.onnx
 *.joblib
 *.h5
+*.hdf5
+*.safetensors
 
-# Jupyter
+# ── Large data / CSV files ────────────────────────────────────────────────────
+*.csv           # scimagojr_*.csv, journals_clean.csv, journal_trends.csv etc.
+*.xlsx          # journals.xlsx, journals 2.xlsx
+*.xls
+backup.sql      # database dump
+
+# ── Django ────────────────────────────────────────────────────────────────────
+*.log
+db.sqlite3
+db.sqlite3-journal
+/staticfiles/
+/mediafiles/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
 .ipynb_checkpoints/
+*.ipynb
 
-# OS / IDE
+# ── Node / React (root-level, if any) ────────────────────────────────────────
+node_modules/
+
+# ── OS & editor junk ──────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
 .vscode/
 .idea/
-.DS_Store
-Thumbs.db
-*.csv
+*.swp
+*.swo
+*~

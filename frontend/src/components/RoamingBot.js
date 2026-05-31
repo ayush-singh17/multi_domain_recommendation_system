@@ -7,10 +7,16 @@ import 'driver.js/dist/driver.css';
 const TOURS = {
   '/': [
     {
+      popover: {
+        title: '👋 Welcome to Journal Finder',
+        description: 'This quick tour walks you through every feature. You\'ll learn how to search, interpret results, and build a smart submission strategy in under 2 minutes.',
+      },
+    },
+    {
       element: '#tab-abstract',
       popover: {
         title: '📄 Abstract Mode',
-        description: 'Paste your full research abstract here. Our BERT model reads the complete semantic meaning — not just keywords — to find the best-fit journals.',
+        description: 'Paste your full manuscript abstract (100–250 words). BERT reads the complete semantic meaning of your text — not just individual words — giving you the most accurate journal matches.',
         side: 'bottom', align: 'start',
       },
     },
@@ -18,15 +24,15 @@ const TOURS = {
       element: '#tab-keywords',
       popover: {
         title: '🏷️ Keyword Mode',
-        description: "Prefer to type topics instead? Add up to 10 keywords and we'll automatically expand them into a full semantic context before searching.",
+        description: 'Prefer keywords over a full abstract? Type up to 10 research topics. The system automatically expands them into a rich semantic sentence before ranking journals — great for early-stage papers.',
         side: 'bottom', align: 'start',
       },
     },
     {
       element: '.abstract-input, .keyword-input-area',
       popover: {
-        title: '✍️ Your Input',
-        description: 'Aim for 100–250 words in abstract mode. The richer your input, the more accurate the journal matches.',
+        title: '✍️ Your Research Input',
+        description: 'In Abstract mode, aim for 100–250 words — BERT\'s sweet spot. In Keyword mode, press Enter or comma after each term. The word-count bar below tracks your progress in real time.',
         side: 'right', align: 'start',
       },
     },
@@ -34,57 +40,112 @@ const TOURS = {
       element: '.focus-group',
       popover: {
         title: '🎯 Focus Filter',
-        description: "Narrow results to a specific academic domain — like Clinical Impact or Legal / Policy — or leave it on General for the broadest match.",
+        description: 'Narrows results to journals that primarily publish in a specific academic domain. Use "General / Best Fit" for interdisciplinary work, or pick a domain like "Clinical Impact" or "Technical / Engineering" to target a specific community.',
+        side: 'top', align: 'start',
+      },
+    },
+    {
+      element: '.search-filters-row',
+      popover: {
+        title: '⚙️ Pre-Search Filters',
+        description: 'Set minimum thresholds before searching. H-index ≥ 100 narrows to high-impact journals. SJR ≥ 1.0 filters to above-average prestige. Leave blank to see all matches — you can also filter after seeing results.',
         side: 'top', align: 'start',
       },
     },
     {
       element: '.btn-search',
       popover: {
-        title: '🔍 Execute Search',
-        description: 'Runs BM25 keyword matching + BERT semantic ranking simultaneously across 29,553 indexed journals. Results arrive in 5–15 seconds.',
+        title: '🔍 Run the Search',
+        description: 'Triggers a hybrid BM25 + BERT ranking pass across all 29,553 indexed journals simultaneously. BM25 scores keyword frequency; BERT scores semantic meaning. Both are normalised and combined. Expect results in 5–15 seconds.',
         side: 'top', align: 'end',
-      },
-    },
-    {
-      element: '.search-filters-row',
-      popover: {
-        title: '⚙️ Result Filters',
-        description: 'Pre-filter by H-index and SJR score before searching. Leave blank to see all matches, then filter on the results page.',
-        side: 'top', align: 'start',
       },
     },
     {
       element: '.search-stats-strip',
       popover: {
-        title: '📊 System Stats',
-        description: '29,553 journals indexed. Results split into 3 strategy tiers (Plan A / B / C). Hover each stat to learn more.',
+        title: '📊 System Coverage',
+        description: '29,553 peer-reviewed journals from Scopus, DOAJ, and SciMago. Results are always split into 3 strategy tiers (Plan A / B / C). Hover any stat card to see the full explanation.',
         side: 'top', align: 'start',
       },
     },
+    {
+      element: '.float-card-1, .float-card-2',
+      popover: {
+        title: '🧠 The Neural Engine',
+        description: 'BERT encodes your abstract into a 768-dimensional semantic vector. BM25 runs keyword frequency scoring in parallel. These two signals are merged into one hybrid relevance score for every journal in the database.',
+        side: 'left', align: 'start',
+      },
+    },
   ],
+
   '/results': [
     {
-      element: '.filter-bar',
       popover: {
-        title: '🔖 Filter Bar',
-        description: 'Filter results by quartile (Q1–Q4) or risk level. The roadmap and all plan sections update live.',
+        title: '📋 Your Results Are Ready',
+        description: 'Here\'s a tour of everything on this page — from filtering and tag chips to reading journal cards, understanding recommendations, downloading your PDF report, and comparing journals side by side.',
+      },
+    },
+    {
+      element: '.tag-filter-bar',
+      popover: {
+        title: '🏷️ Quartile & Risk Tags',
+        description: 'Click any tag to instantly filter results. Q1–Q4 tags filter by SciMago quartile ranking — Q1 is the top 25% by citation impact. "Low Risk" / "Medium Risk" filter by predatory journal safety score. The number on each tag shows how many journals match. Click again to clear.',
+        side: 'bottom', align: 'start',
+      },
+    },
+    {
+      element: '.tag-filter-chip.tag-q1, .tag-filter-chip',
+      popover: {
+        title: '📌 What Do Quartiles Mean?',
+        description: 'Q1 = Top 25% journals by citation impact in their field (most competitive, highest visibility). Q2 = 25–50% (balanced impact & acceptance). Q3 = 50–75% (broader scope). Q4 = Bottom 25% (fastest acceptance, least prestige). Always target a spread across Plans A, B, and C.',
         side: 'bottom', align: 'start',
       },
     },
     {
       element: '.plan-section',
       popover: {
-        title: '📋 Strategy Plans',
-        description: 'Results are split into 3 tiers. Plan A = ambitious Q1 targets. Plan B = balanced Q2. Plan C = safe, high-acceptance fallbacks.',
+        title: '📁 3-Tier Strategy Plans',
+        description: 'Plan A = Ambitious Q1 targets — highest impact, most competitive. Plan B = Balanced Q2 journals — strong acceptance odds with solid reputation. Plan C = Safety net — high-acceptance indexed journals for a guaranteed publication. Submit to A first, move to B or C only after rejection.',
         side: 'top', align: 'start',
       },
     },
     {
-      element: '.timeline-card',
+      element: '.jc-card',
+      popover: {
+        title: '📖 Journal Card',
+        description: 'Each card shows: Match % (semantic relevance score), Quartile, Risk level, Impact Factor, CiteScore, SJR, H-index, estimated Time to Review, Open Access status, and APC cost. All data is sourced from Scopus, DOAJ, and SciMago.',
+        side: 'top', align: 'start',
+      },
+    },
+    {
+      element: '.why-accordion',
+      popover: {
+        title: '💡 Why Recommended',
+        description: 'Click "Why Recommended" on any journal card to expand the reasoning panel. It shows: matched semantic tokens from your abstract, a plain-language relevance explanation, risk signals (✓ green = good, ~ amber = caution, ✗ red = warning), and the exact BM25 + BERT score breakdown used to rank this journal.',
+        side: 'top', align: 'start',
+      },
+    },
+    {
+      element: '.timeline-card, .submission-timeline',
       popover: {
         title: '🗓️ Submission Roadmap',
-        description: 'A dynamic timeline that updates with your filters. Shows optimal submission windows and parallel-track strategies.',
+        description: 'A dynamic timeline that re-renders every time you apply a filter tag. It shows optimal submission windows for each plan, parallel-track strategy (submit to A and B simultaneously), and estimated response dates based on the average time-to-review of your filtered journals.',
+        side: 'top', align: 'start',
+      },
+    },
+    {
+      element: '.results-actions',
+      popover: {
+        title: '📥 Download PDF Report',
+        description: 'The "Download PDF Report" button generates a formatted, shareable PDF of all your results — including journal details, match scores, and your 3-tier strategy. Great for sharing with co-authors or advisors. PDF generation takes 5–10 seconds.',
+        side: 'top', align: 'end',
+      },
+    },
+    {
+      element: '.btn-compare, .btn-compare-active',
+      popover: {
+        title: '⇄ Compare Journals',
+        description: 'Click "Compare" on up to 3 journal cards to add them to the comparison bar at the bottom. Then click "Compare Selected" to see a side-by-side breakdown of all their metrics — ideal for choosing between similarly ranked journals.',
         side: 'top', align: 'start',
       },
     },
@@ -92,12 +153,14 @@ const TOURS = {
 };
 
 const HELP_CONTENT = [
-  { icon: '📄', title: 'Abstract Mode', desc: 'Paste 100–250 words from your manuscript for the deepest semantic matching using BERT.' },
-  { icon: '🏷️', title: 'Keyword Mode', desc: "Type up to 10 research topics. They're expanded into semantic context automatically." },
-  { icon: '📊', title: 'Strategy Tiers', desc: 'Plan A = Q1 ambition, Plan B = balanced Q2, Plan C = safe high-acceptance journals.' },
-  { icon: '⚙️', title: 'H-index & SJR', desc: 'Pre-filter by journal impact. H-index > 100 is typically Q1. SJR > 1.0 is above average.' },
-  { icon: '🗓️', title: 'Submission Roadmap', desc: 'A live roadmap of when to submit based on your filtered results. Updates with every filter change.' },
-  { icon: '📁', title: 'History Tab', desc: 'Every search is saved. Revisit past results anytime from the History tab in the navbar.' },
+  { icon: '📄', title: 'Abstract Mode',      desc: 'Paste 100–250 words. BERT reads full semantic meaning for the most accurate matches.' },
+  { icon: '🏷️', title: 'Keyword Mode',       desc: 'Add up to 10 topics. They\'re expanded into semantic context automatically before ranking.' },
+  { icon: '📁', title: 'Strategy Tiers',     desc: 'Plan A = Q1 ambition, Plan B = balanced Q2, Plan C = safe high-acceptance fallback.' },
+  { icon: '🔖', title: 'Q1–Q4 Tag Filters',  desc: 'Filter results by SciMago quartile. Q1 = top 25% impact. Click a tag chip on the results page.' },
+  { icon: '💡', title: 'Why Recommended',    desc: 'Expand the accordion on any journal card to see matched tokens, relevance reasoning, and score breakdown.' },
+  { icon: '📥', title: 'PDF Report',         desc: 'Download a formatted PDF of your full 3-tier strategy to share with co-authors or advisors.' },
+  { icon: '🗓️', title: 'Submission Roadmap', desc: 'A live timeline that updates with every filter. Shows when to submit to each plan.' },
+  { icon: '📁', title: 'History Tab',        desc: 'Every search is saved. Revisit past results anytime from the History tab in the navbar.' },
 ];
 
 // Roaming anchor points: far right edge only — menu always opens leftward
@@ -188,8 +251,16 @@ export default function RoamingBot() {
     setMenu(false);
     const steps = TOURS[location.pathname] || TOURS['/'];
     const validSteps = steps
-      .filter(s => s.element.split(', ').some(sel => document.querySelector(sel)))
+      .filter(s => {
+        // Steps with no element (intro popovers) are always included
+        if (!s.element) return true;
+        // Steps with an element are only included if at least one selector exists in the DOM
+        return s.element.split(', ').some(sel => document.querySelector(sel));
+      })
       .map(s => {
+        // No element → pass through untouched (Driver.js centres these as intro slides)
+        if (!s.element) return s;
+        // Pick the first selector that actually exists in the DOM
         const el = s.element.split(', ').find(sel => document.querySelector(sel));
         return { ...s, element: el };
       });
@@ -232,7 +303,6 @@ export default function RoamingBot() {
           className={`roam-bot ${menu ? 'roam-bot--active' : ''}`}
           onClick={handleBotClick}
           aria-label="Scholar helper"
-          title="Need guidance?"
         >
           <ScholarSVG blinking={blinking} moving={moving} />
         </button>
