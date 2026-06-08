@@ -248,7 +248,7 @@ def recommend(req: RecommendRequest):
 
         strategy  = build_strategy(search_text, df, bm25_index, embeddings, model,
                                     focus=req.focus, prestige_weight=req.prestige_weight)
-        explained = explain_strategy(strategy, search_text, df)
+        explained = explain_strategy(strategy, search_text, df, search_mode=req.search_mode)
 
         # ── Collect all journals across plans for concurrent link fetching ──
         all_titles = []

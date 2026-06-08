@@ -29,7 +29,8 @@ def get_matched_tokens(row: pd.Series, abstract_tokens: set, df_full: pd.DataFra
 
 
 def explain_relevance(matched_tokens: list, hybrid_score: float, hybrid_norm: float,
-                      bert_score: float, bm25_score: float) -> str:
+                      bert_score: float, bm25_score: float,
+                      search_mode: str = "abstract") -> str:
     """
     Explain why the journal is relevant.
     Detects three cases:
@@ -37,6 +38,9 @@ def explain_relevance(matched_tokens: list, hybrid_score: float, hybrid_norm: fl
       2. High BERT but low BM25          → contextual bridge (interdisciplinary)
       3. No match at all                 → honest warning
     """
+    # Use appropriate wording based on search mode
+    input_label = "your research topic" if search_mode == "keyword" else "your abstract"
+
     # Contextual bridge: BERT sees meaning even when keywords differ
     bert_high  = bert_score > 0.80
     bm25_low   = bm25_score < 3.0
@@ -44,7 +48,7 @@ def explain_relevance(matched_tokens: list, hybrid_score: float, hybrid_norm: fl
     if bert_high and bm25_low and not matched_tokens:
         return (
             "Recommended for conceptual alignment rather than keyword overlap. "
-            "The semantic model detected thematic similarity between your abstract "
+            f"The semantic model detected thematic similarity between {input_label} "
             "and this journal's scope — likely due to shared underlying concepts "
             "across disciplines. Verify the journal's aim and scope manually."
         )
@@ -60,15 +64,17 @@ def explain_relevance(matched_tokens: list, hybrid_score: float, hybrid_norm: fl
                       "beyond the matched keywords.")
 
         return (f"{strength.capitalize()} topic match. "
-                f"Your abstract shares key terms with this journal: {words}.{bridge}")
+                f"{input_label.capitalize()} shares key terms with this journal: {words}.{bridge}")
 
     return ("No direct keyword overlap found with journal title or categories. "
             "Ranked by structural similarity — verify scope manually.")
 
 
-def explain_risk(row: pd.Series) -> list:
+def explain_risk(row: pd.Series, search_mode: str = "abstract") -> list:
     """Return a list of risk signal sentences based on penalty values."""
     signals = []
+    # Use appropriate wording based on search mode
+    domain_label = "research topic" if search_mode == "keyword" else "abstract domain"
 
     # SJR
     p = row["penalty_sjr"]
@@ -112,11 +118,11 @@ def explain_risk(row: pd.Series) -> list:
     # Domain match
     p = row["penalty_domain"]
     if p == 0:
-        signals.append(f"✓ Journal area aligns with abstract domain ({row['Areas']}).")
+        signals.append(f"✓ Journal area aligns with {domain_label} ({row['Areas']}).")
     elif p <= 10:
         signals.append(f"~ Partial area alignment ({row['Areas']}).")
     else:
-        signals.append(f"⚠ Journal area ({row['Areas']}) does not clearly match abstract domain.")
+        signals.append(f"⚠ Journal area ({row['Areas']}) does not clearly match {domain_label}.")
 
     return signals
 
@@ -134,7 +140,8 @@ def explain_score(row: pd.Series) -> str:
             f"Citation: {cite} (20%) = {total}")
 
 
-def explain_journal(row: pd.Series, abstract_tokens: set, df_full: pd.DataFrame) -> dict:
+def explain_journal(row: pd.Series, abstract_tokens: set, df_full: pd.DataFrame,
+                    search_mode: str = "abstract") -> dict:
     """
     Master function — generates the full explanation for one journal.
     Returns a dict used by both terminal display and Streamlit UI.
@@ -142,9 +149,10 @@ def explain_journal(row: pd.Series, abstract_tokens: set, df_full: pd.DataFrame)
     matched  = get_matched_tokens(row, abstract_tokens, df_full)
     relevance_text = explain_relevance(
         matched, row["hybrid_score"], row["hybrid_norm"],
-        row["bert_score"], row["bm25_score"]
+        row["bert_score"], row["bm25_score"],
+        search_mode=search_mode
     )
-    risk_signals   = explain_risk(row)
+    risk_signals   = explain_risk(row, search_mode=search_mode)
     score_text     = explain_score(row)
 
     return {
@@ -179,7 +187,8 @@ def explain_journal(row: pd.Series, abstract_tokens: set, df_full: pd.DataFrame)
     }
 
 
-def explain_strategy(strategy: dict, abstract: str, df_full: pd.DataFrame) -> dict:
+def explain_strategy(strategy: dict, abstract: str, df_full: pd.DataFrame,
+                     search_mode: str = "abstract") -> dict:
     """
     Generates explanations for all journals across all three plans.
     Returns a nested dict: {plan_key: [explanation_dict, ...]}
@@ -191,7 +200,7 @@ def explain_strategy(strategy: dict, abstract: str, df_full: pd.DataFrame) -> di
     for plan_key, plan_df in strategy["plans"].items():
         explained[plan_key] = []
         for _, row in plan_df.iterrows():
-            exp = explain_journal(row, abstract_tokens, df_full)
+            exp = explain_journal(row, abstract_tokens, df_full, search_mode=search_mode)
             explained[plan_key].append(exp)
 
     return explained

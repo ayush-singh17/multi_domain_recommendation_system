@@ -996,12 +996,13 @@ a:hover { color: var(--primary-dark); }
   background: var(--primary-light);
   color: var(--primary);
   border: 1px solid rgba(3,105,161,.2);
-  border-radius: 100px;
-  padding: .22rem .65rem .22rem .75rem;
+  border-radius: 12px;
+  padding: .3rem .65rem .3rem .75rem;
   font-size: .8rem; font-weight: 600;
   animation: fadeIn .15s ease;
-  white-space: nowrap;
-  max-width: 200px;
+  word-break: break-word;
+  max-width: 100%;
+  line-height: 1.35;
 }
 .keyword-chip-delete {
   background: none; border: none;
