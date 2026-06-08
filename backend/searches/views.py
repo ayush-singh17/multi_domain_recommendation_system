@@ -93,17 +93,27 @@ class PDFView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        abstract = request.data.get('abstract', '').strip()
-        focus    = request.data.get('focus', 'General / Best Fit')
+        abstract    = request.data.get('abstract', '').strip()
+        focus       = request.data.get('focus', 'General / Best Fit')
+        search_mode = request.data.get('search_mode', 'abstract')
+        keywords    = request.data.get('keywords', [])
 
-        if not abstract:
+        if search_mode == 'abstract' and not abstract:
             return Response({'error': 'Abstract is required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if search_mode == 'keyword' and not keywords:
+            return Response({'error': 'At least one keyword is required'},
                             status=status.HTTP_400_BAD_REQUEST)
 
         try:
             ml_response = requests.post(
                 f"{ML_URL}/pdf",
-                json={'abstract': abstract, 'focus': focus},
+                json={
+                    'abstract':    abstract,
+                    'focus':       focus,
+                    'search_mode': search_mode,
+                    'keywords':    keywords,
+                },
                 timeout=60,
             )
             ml_response.raise_for_status()

@@ -119,7 +119,7 @@ export default function Results() {
   const [showModal, setShowModal]     = useState(false);
   const [activeTag, setActiveTag]     = useState(null);
 
-  const { results, abstract, focus, minHIndex = 0, minSJR = 0 } = location.state || {};
+  const { results, abstract, focus, minHIndex = 0, minSJR = 0, searchMode, keywords } = location.state || {};
   const { plans = {}, stats = {}, warnings = [] } = results || {};
 
   // Apply filters (H-index, SJR, and active tag) to all three plans
@@ -186,7 +186,12 @@ export default function Results() {
   const handleDownloadPDF = async () => {
     setDownloading(true);
     try {
-      const res = await API.post('/search/recommend/pdf/', { abstract, focus }, { responseType: 'blob' });
+      const res = await API.post('/search/recommend/pdf/', {
+        abstract,
+        focus,
+        search_mode: searchMode || 'abstract',
+        keywords: keywords || [],
+      }, { responseType: 'blob' });
       const url  = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url; link.download = 'journal_recommendations.pdf'; link.click();

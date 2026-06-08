@@ -104,7 +104,9 @@ def keywords_to_abstract(keywords: list) -> str:
 
 
 class PDFRequest(BaseModel):
-    abstract:        str
+    abstract:        str   = ""
+    keywords:        list  = []
+    search_mode:     str   = "abstract"
     focus:           str   = "General / Best Fit"
     prestige_weight: float = 1.0
 
@@ -370,8 +372,15 @@ def generate_pdf_endpoint(req: PDFRequest):
     if not _resources.get("ready"):
         raise HTTPException(status_code=503, detail="ML service still loading")
 
-    if not req.abstract.strip():
-        raise HTTPException(status_code=400, detail="Abstract cannot be empty")
+    # Resolve search text based on mode
+    if req.search_mode == "keyword":
+        if not req.keywords:
+            raise HTTPException(status_code=400, detail="At least one keyword is required")
+        search_text = keywords_to_abstract(req.keywords)
+    else:
+        search_text = req.abstract.strip()
+        if not search_text:
+            raise HTTPException(status_code=400, detail="Abstract cannot be empty")
 
     try:
         from step6_strategy import build_strategy
@@ -384,9 +393,9 @@ def generate_pdf_endpoint(req: PDFRequest):
         embeddings = _resources["embeddings"]
         model      = _resources["model"]
 
-        strategy  = build_strategy(req.abstract, df, bm25_index, embeddings, model,
+        strategy  = build_strategy(search_text, df, bm25_index, embeddings, model,
                                     focus=req.focus, prestige_weight=req.prestige_weight)
-        explained = explain_strategy(strategy, req.abstract, df)
+        explained = explain_strategy(strategy, search_text, df, search_mode=req.search_mode)
 
         # Inject trend data into each journal before PDF generation
         for plan_key, options in explained.items():
@@ -395,7 +404,11 @@ def generate_pdf_endpoint(req: PDFRequest):
                     exp["trend"] = _get_trend(exp.get("issn", ""))
                     # weeks_to_publish comes from the df via step3b — already in exp
 
-        pdf_buf   = generate_report(explained, strategy, req.abstract, req.focus)
+        pdf_buf   = generate_report(
+            explained, strategy, search_text, req.focus,
+            search_mode=req.search_mode,
+            keywords=req.keywords if req.search_mode == "keyword" else None,
+        )
 
         date_str  = datetime.now().strftime("%Y%m%d_%H%M")
         filename  = f"journal_recommendations_{date_str}.pdf"

@@ -317,7 +317,8 @@ def render_journal(exp: dict, option_num: int, styles: dict) -> list:
     return elements
 
 
-def generate_report(explained: dict, strategy: dict, abstract: str, focus: str) -> io.BytesIO:
+def generate_report(explained: dict, strategy: dict, abstract: str, focus: str,
+                    search_mode: str = "abstract", keywords: list = None) -> io.BytesIO:
     """
     Generates a PDF report and returns it as a BytesIO buffer.
     Pass directly to st.download_button(data=...).
@@ -343,10 +344,15 @@ def generate_report(explained: dict, strategy: dict, abstract: str, focus: str) 
         width="100%", thickness=1.5, color=C_BLUE, spaceBefore=4, spaceAfter=12
     ))
 
-    # ── Abstract ──────────────────────────────────────────────────────────
-    story.append(Paragraph("Abstract", styles["section"]))
-    clean_abstract = " ".join(abstract.strip().split())
-    story.append(Paragraph(clean_abstract, styles["abstract"]))
+    # ── Abstract or Keywords section ──────────────────────────────────────
+    if search_mode == "keyword" and keywords:
+        story.append(Paragraph("Keywords", styles["section"]))
+        keywords_text = ", ".join(keywords)
+        story.append(Paragraph(keywords_text, styles["abstract"]))
+    else:
+        story.append(Paragraph("Abstract", styles["section"]))
+        clean_abstract = " ".join(abstract.strip().split())
+        story.append(Paragraph(clean_abstract, styles["abstract"]))
     story.append(Spacer(1, 8))
 
     # ── Plans ─────────────────────────────────────────────────────────────
