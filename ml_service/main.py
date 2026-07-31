@@ -303,6 +303,7 @@ def recommend(req: RecommendRequest):
                     "predatory_level":   exp.get("predatory_level"),
                     "predatory_flags":   exp.get("predatory_flags"),
                     "homepage_url":       link_map.get(exp["title"]),
+                    "mahe_approved":     exp.get("mahe_approved", 0),
                 }))
 
         # Stats
@@ -422,3 +423,6 @@ def generate_pdf_endpoint(req: PDFRequest):
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+# Trigger reload for parent module change: step6_strategy updated to unsliced plans.
+

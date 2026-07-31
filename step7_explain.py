@@ -184,6 +184,7 @@ def explain_journal(row: pd.Series, abstract_tokens: set, df_full: pd.DataFrame,
         "predatory_score":    row.get("predatory_score",    0),
         "predatory_level":    row.get("predatory_level",    "Clear"),
         "predatory_flags":    row.get("predatory_flags",    []),
+        "mahe_approved":      int(row.get("mahe_approved",   0)),
     }
 
 

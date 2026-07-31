@@ -625,6 +625,20 @@ export default function Search() {
               </div>
             </div>
           </Tip>
+
+          <Tip
+            content="Results are cross-referenced against the official MAHE (Manipal Academy of Higher Education) Approved Journals list. Approved journals are flagged with a 'MAHE ✓' badge so you can filter for them."
+            placement="left"
+            maxWidth={260}
+          >
+            <div className="float-card float-card-3">
+              <div className="float-card-icon teal">🏛️</div>
+              <div>
+                <div className="float-card-label">Verified Database</div>
+                <div className="float-card-value">MAHE Approved List</div>
+              </div>
+            </div>
+          </Tip>
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Search, SavedJournal
+from .models import Search, SavedJournal, Feedback
 
 
 class SearchSerializer(serializers.ModelSerializer):
@@ -15,3 +15,11 @@ class SavedJournalSerializer(serializers.ModelSerializer):
         fields = ['id', 'journal_title', 'issn', 'quartile', 'sjr',
                   'h_index', 'plan', 'notes', 'saved_at']
         read_only_fields = ['id', 'saved_at']
+
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = Feedback
+        fields = ['id', 'feedback_type', 'rating', 'message', 'created_at']
+        read_only_fields = ['id', 'created_at']
+

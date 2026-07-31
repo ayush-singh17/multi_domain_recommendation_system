@@ -124,9 +124,9 @@ export default function Results() {
 
   // Apply filters (H-index, SJR, and active tag) to all three plans
   const filteredPlans = useMemo(() => {
-    const apply = (journals) => {
+    const apply = (journals, planKey) => {
       if (!journals) return [];
-      return journals.filter(j => {
+      const filtered = journals.filter(j => {
         const hOk   = minHIndex === 0 || (j.h_index != null && parseFloat(j.h_index) >= minHIndex);
         const sjrOk = minSJR   === 0 || (j.sjr     != null && parseFloat(j.sjr)      >= minSJR);
         let tagOk   = true;
@@ -137,12 +137,27 @@ export default function Results() {
             tagOk = j.risk_level === 'Low';
           } else if (activeTag === 'Medium Risk') {
             tagOk = j.risk_level === 'Medium';
+          } else if (activeTag === 'MAHE Approved') {
+            tagOk = j.mahe_approved === 1;
           }
         }
         return hOk && sjrOk && tagOk;
       });
+
+      // If activeTag is selected, we show all matches (no slicing).
+      // Otherwise, we limit to the recommended count (3 for A/B, 5 for C).
+      if (activeTag) {
+        return filtered;
+      } else {
+        const limit = planKey === 'C' ? 5 : 3;
+        return filtered.slice(0, limit);
+      }
     };
-    return { A: apply(plans.A), B: apply(plans.B), C: apply(plans.C) };
+    return { 
+      A: apply(plans.A, 'A'), 
+      B: apply(plans.B, 'B'), 
+      C: apply(plans.C, 'C') 
+    };
   }, [plans, minHIndex, minSJR, activeTag]);
 
   // ── Dynamic timeline recomputed from whatever journals are currently visible ──
@@ -163,8 +178,18 @@ export default function Results() {
       'Q4':          count(j => j.quartile   === 'Q4'),
       'Low Risk':    count(j => j.risk_level === 'Low'),
       'Medium Risk': count(j => j.risk_level === 'Medium'),
+      'MAHE Approved': count(j => j.mahe_approved === 1),
     };
   }, [plans, minHIndex, minSJR]);
+
+  // Calculate dynamic showing counts of Q1 and Low Risk recommended journals
+  const showingQ1 = useMemo(() => {
+    return [...filteredPlans.A, ...filteredPlans.B, ...filteredPlans.C].filter(j => j.quartile === 'Q1').length;
+  }, [filteredPlans]);
+
+  const showingLowRisk = useMemo(() => {
+    return [...filteredPlans.A, ...filteredPlans.B, ...filteredPlans.C].filter(j => j.risk_level === 'Low').length;
+  }, [filteredPlans]);
 
   // Early return AFTER all hooks
   if (!results) { navigate('/'); return null; }
@@ -206,18 +231,22 @@ export default function Results() {
       {/* Stats */}
       <div className="results-stats">
         <div className="stat-card">
-          <div className="stat-card-num">{stats.total}</div>
-          <div className="stat-card-label">Total Matches</div>
+          <div className="stat-card-num">{stats.total || 0}</div>
+          <div className="stat-card-label">Database Matches</div>
         </div>
         <div className="stat-card accent-indigo">
-          <div className="stat-card-num">{stats.q1_count}</div>
-          <div className="stat-card-label">Q1 Journals</div>
-        </div>
-        <div className="stat-card accent-emerald">
-          <div className="stat-card-num">{stats.low_risk}</div>
-          <div className="stat-card-label">Low Risk</div>
+          <div className="stat-card-num">{totalShowing}</div>
+          <div className="stat-card-label">Recommended Options</div>
         </div>
         <div className="stat-card accent-amber">
+          <div className="stat-card-num">{showingQ1}</div>
+          <div className="stat-card-label">Q1 Recommended</div>
+        </div>
+        <div className="stat-card accent-emerald">
+          <div className="stat-card-num">{showingLowRisk}</div>
+          <div className="stat-card-label">Low Risk Recommended</div>
+        </div>
+        <div className="stat-card">
           <div className="stat-card-num">{focus !== 'General / Best Fit' ? focus.split('/')[0].trim() : 'General'}</div>
           <div className="stat-card-label">Focus Mode</div>
         </div>
@@ -228,7 +257,7 @@ export default function Results() {
       {/* ── Tag filter tabs ── */}
       <div className="tag-filter-bar">
         <span className="tag-filter-label">Filter</span>
-        {[['Q1','tag-q1'],['Q2','tag-q2'],['Q3','tag-q3'],['Q4','tag-q4'],['Low Risk','tag-risk-low'],['Medium Risk','tag-risk-med']].map(([tag, cls]) => (
+        {[['Q1','tag-q1'],['Q2','tag-q2'],['Q3','tag-q3'],['Q4','tag-q4'],['Low Risk','tag-risk-low'],['Medium Risk','tag-risk-med'],['MAHE Approved','tag-mahe']].map(([tag, cls]) => (
           <button
             key={tag}
             className={'tag-filter-chip ' + cls + (activeTag === tag ? ' active' : '')}

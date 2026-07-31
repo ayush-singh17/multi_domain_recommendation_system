@@ -97,7 +97,7 @@ export default function JournalCard({ journal, planKey, onCompareToggle, isCompa
   return (
     <div className={'jc-card' + (isCompared ? ' jc-card-compared' : '')}>
 
-      {/* ── Top bar: journal name + match % + quartile + risk ── */}
+      {/* ── Top bar: title + match score on left, pills on right ── */}
       <div className="jc-top">
         <div className="jc-title-block">
           <div className="jc-title">{journal.title}</div>
@@ -119,21 +119,26 @@ export default function JournalCard({ journal, planKey, onCompareToggle, isCompa
           )}
         </div>
 
-        <div className="jc-badges">
-          {/* Match score */}
+        <div className="jc-right-col">
+          {/* Match score — standalone prominent element */}
           <div className="jc-match">
             <span className="jc-match-num">{scorePct}%</span>
             <span className="jc-match-label">Match</span>
           </div>
 
-          {/* Quartile */}
-          <div className="jc-badge" style={{color: quartileColor, borderColor: quartileColor + '40', background: quartileColor + '12'}}>
-            {journal.quartile || '—'}
-          </div>
-
-          {/* Risk */}
-          <div className="jc-badge" style={{color: riskColor, borderColor: riskColor + '40', background: riskColor + '12'}}>
-            {journal.risk_level || '—'} Risk
+          {/* Uniform pills row */}
+          <div className="jc-pills">
+            <div className="jc-pill" style={{color: quartileColor, borderColor: quartileColor + '40', background: quartileColor + '12'}}>
+              {journal.quartile || '—'}
+            </div>
+            <div className="jc-pill" style={{color: riskColor, borderColor: riskColor + '40', background: riskColor + '12'}}>
+              {journal.risk_level || '—'} Risk
+            </div>
+            {journal.mahe_approved === 1 && (
+              <div className="jc-pill jc-pill-mahe">
+                MAHE ✓
+              </div>
+            )}
           </div>
         </div>
       </div>

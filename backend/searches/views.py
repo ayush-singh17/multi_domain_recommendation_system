@@ -17,8 +17,8 @@ from rest_framework              import generics, permissions, status
 from rest_framework.views        import APIView
 from rest_framework.response     import Response
 from django.http                 import HttpResponse
-from .models                     import Search, SavedJournal
-from .serializers                import SearchSerializer, SavedJournalSerializer
+from .models                     import Search, SavedJournal, Feedback
+from .serializers                import SearchSerializer, SavedJournalSerializer, FeedbackSerializer
 
 
 ML_URL = settings.ML_SERVICE_URL
@@ -170,3 +170,16 @@ class SavedJournalDeleteView(generics.DestroyAPIView):
 
     def get_queryset(self):
         return SavedJournal.objects.filter(user=self.request.user)
+
+
+class FeedbackCreateView(generics.CreateAPIView):
+    """
+    POST /api/search/feedback/
+    Submit feedback (bug report, feature request, or general comment).
+    """
+    serializer_class   = FeedbackSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+

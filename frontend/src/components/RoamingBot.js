@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
+import API from '../api/axios';
 
 // ── Driver.js tour definitions per route ─────────────────────────────────────
 const TOURS = {
@@ -76,6 +77,14 @@ const TOURS = {
         side: 'left', align: 'start',
       },
     },
+    {
+      element: '.float-card-3',
+      popover: {
+        title: '🏛️ MAHE Approved Journals',
+        description: 'Results are cross-referenced against the official MAHE (Manipal Academy of Higher Education) Approved Journals list. On the results page, you can filter by "MAHE Approved" to see only approved journals — each marked with a teal "MAHE ✓" badge.',
+        side: 'left', align: 'start',
+      },
+    },
   ],
 
   '/results': [
@@ -88,8 +97,8 @@ const TOURS = {
     {
       element: '.tag-filter-bar',
       popover: {
-        title: '🏷️ Quartile & Risk Tags',
-        description: 'Click any tag to instantly filter results. Q1–Q4 tags filter by SciMago quartile ranking — Q1 is the top 25% by citation impact. "Low Risk" / "Medium Risk" filter by predatory journal safety score. The number on each tag shows how many journals match. Click again to clear.',
+        title: '🏷️ Quartile, Risk & MAHE Tags',
+        description: 'Click any tag to instantly filter results. Q1–Q4 filter by SciMago quartile ranking. "Low Risk" / "Medium Risk" filter by predatory safety score. "MAHE Approved" shows only journals from the official MAHE approved list. The count on each tag shows how many journals match.',
         side: 'bottom', align: 'start',
       },
     },
@@ -172,6 +181,13 @@ const ROAM_ANCHORS = [
   { x: 93, y: 46  },   // mid-right
 ];
 
+// ── Feedback type options ─────────────────────────────────────────────────────
+const FEEDBACK_TYPES = [
+  { key: 'bug',     label: 'Bug Report',       icon: '🐛' },
+  { key: 'feature', label: 'Feature Request',   icon: '✨' },
+  { key: 'general', label: 'General Feedback',  icon: '💬' },
+];
+
 // ── RoamingBot component ──────────────────────────────────────────────────────
 export default function RoamingBot() {
   const location = useLocation();
@@ -179,9 +195,18 @@ export default function RoamingBot() {
   const [anchorIdx, setAnchorIdx] = useState(0);
   const [menu, setMenu]           = useState(false);
   const [help, setHelp]           = useState(false);
+  const [feedback, setFeedback]   = useState(false);
   const [bubble, setBubble]       = useState(false);
   const [moving, setMoving]       = useState(false);
   const [blinking, setBlinking]   = useState(false);
+
+  // Feedback form state
+  const [fbType, setFbType]       = useState('general');
+  const [fbRating, setFbRating]   = useState(0);
+  const [fbHover, setFbHover]     = useState(0);
+  const [fbMessage, setFbMessage] = useState('');
+  const [fbSending, setFbSending] = useState(false);
+  const [fbSent, setFbSent]       = useState(false);
 
   const roamTimer   = useRef(null);
   const bubbleTimer = useRef(null);
@@ -193,7 +218,7 @@ export default function RoamingBot() {
 
   // ── Roaming logic — cycles through right-side anchors ──
   const roam = useCallback(() => {
-    if (menu || help) return;
+    if (menu || help || feedback) return;
     setAnchorIdx(prev => {
       let next;
       do { next = Math.floor(Math.random() * ROAM_ANCHORS.length); }
@@ -202,14 +227,14 @@ export default function RoamingBot() {
     });
     setMoving(true);
     setTimeout(() => setMoving(false), 1400);
-  }, [menu, help]);
+  }, [menu, help, feedback]);
 
   // ── Speech bubble ──
   const showBubble = useCallback(() => {
-    if (menu || help) return;
+    if (menu || help || feedback) return;
     setBubble(true);
     setTimeout(() => setBubble(false), 3500);
-  }, [menu, help]);
+  }, [menu, help, feedback]);
 
   // ── Blink ──
   useEffect(() => {
@@ -245,6 +270,13 @@ export default function RoamingBot() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // ── Adaptive menu alignment — pick anchor direction based on owl's viewport position ──
+  const menuAlign = useMemo(() => {
+    if (pos.y < 30) return 'roam-menu--align-top';       // owl near top → menu hangs below
+    if (pos.y > 60) return 'roam-menu--align-bottom';    // owl near bottom → menu rises above
+    return 'roam-menu--align-center';                    // owl in middle → centred
+  }, [pos.y]);
 
   // ── Driver.js tour ──
   const startDemo = useCallback(() => {
@@ -285,6 +317,39 @@ export default function RoamingBot() {
     setMenu(m => !m);
   };
 
+  // ── Open feedback modal ──
+  const openFeedback = () => {
+    setMenu(false);
+    setFbType('general');
+    setFbRating(0);
+    setFbHover(0);
+    setFbMessage('');
+    setFbSent(false);
+    setFeedback(true);
+  };
+
+  // ── Submit feedback ──
+  const submitFeedback = async () => {
+    if (!fbMessage.trim()) return;
+    setFbSending(true);
+    try {
+      await API.post('/search/feedback/', {
+        feedback_type: fbType,
+        rating: fbRating || null,
+        message: fbMessage.trim(),
+      });
+      setFbSent(true);
+      setTimeout(() => {
+        setFeedback(false);
+        setFbSent(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Feedback submission failed:', err);
+    } finally {
+      setFbSending(false);
+    }
+  };
+
   return (
     <>
       {/* ── Scholar bot + menu ── */}
@@ -307,22 +372,63 @@ export default function RoamingBot() {
           <ScholarSVG blinking={blinking} moving={moving} />
         </button>
 
-        {/* Menu — always opens to the LEFT of the mascot */}
+        {/* ── Redesigned Menu — card-style with owl avatar ── */}
         {menu && (
-          <div ref={menuRef} className="roam-menu">
-            <div className="roam-menu-header">How can I help? 🎓</div>
+          <div ref={menuRef} className={`roam-menu ${menuAlign}`}>
+            {/* Owl avatar header */}
+            <div className="roam-menu-avatar-section">
+              <div className="roam-menu-avatar-ring">
+                <ScholarSVG blinking={false} moving={false} size={48} />
+              </div>
+              <div className="roam-menu-greeting">
+                <div className="roam-menu-greeting-title">How can I help?</div>
+                <div className="roam-menu-greeting-sub">Your research assistant is ready</div>
+              </div>
+            </div>
+
+            <div className="roam-menu-divider" />
+
+            {/* Option 1: Interactive Demo */}
             <button className="roam-menu-btn" onClick={startDemo}>
-              <span className="roam-menu-btn-icon">🎬</span>
+              <span className="roam-menu-btn-icon-wrap">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8"/>
+                  <path d="M10 8.5V15.5L16 12L10 8.5Z" fill="currentColor"/>
+                </svg>
+              </span>
               <div>
-                <div className="roam-menu-btn-title">Take a Demo</div>
-                <div className="roam-menu-btn-sub">Guided tour of the app</div>
+                <div className="roam-menu-btn-title">Take Interactive Demo</div>
+                <div className="roam-menu-btn-sub">Explore all features step-by-step</div>
               </div>
             </button>
+
+            {/* Option 2: Quick Help */}
             <button className="roam-menu-btn" onClick={() => { setMenu(false); setHelp(true); }}>
-              <span className="roam-menu-btn-icon">📖</span>
+              <span className="roam-menu-btn-icon-wrap">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4 4H14L20 10V20C20 20.5523 19.5523 21 19 21H5C4.44772 21 4 20.5523 4 20V4Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                  <path d="M14 4V10H20" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                  <line x1="8" y1="14" x2="16" y2="14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="8" y1="17" x2="13" y2="17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </span>
               <div>
-                <div className="roam-menu-btn-title">Quick Help</div>
+                <div className="roam-menu-btn-title">Quick Help Guide</div>
                 <div className="roam-menu-btn-sub">Tips & feature reference</div>
+              </div>
+            </button>
+
+            {/* Option 3: Submit Feedback */}
+            <button className="roam-menu-btn" onClick={openFeedback}>
+              <span className="roam-menu-btn-icon-wrap">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16.474 5.408l2.118 2.118m-.756-3.982L12.109 9.27a2.118 2.118 0 00-.58 1.082L11 13l2.648-.53a2.118 2.118 0 001.082-.58l5.727-5.727a1.853 1.853 0 10-2.621-2.621z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M19 15v3a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </span>
+              <div>
+                <div className="roam-menu-btn-title">Submit Feedback</div>
+                <div className="roam-menu-btn-sub">Report a bug or suggest an improvement</div>
               </div>
             </button>
           </div>
@@ -356,6 +462,105 @@ export default function RoamingBot() {
                 🎬 Launch Guided Demo
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Feedback Modal ── */}
+      {feedback && (
+        <div className="roam-help-backdrop" onClick={() => setFeedback(false)}>
+          <div className="roam-feedback-panel" onClick={e => e.stopPropagation()}>
+            {/* Success state */}
+            {fbSent ? (
+              <div className="roam-feedback-success">
+                <div className="roam-feedback-success-icon">✓</div>
+                <div className="roam-feedback-success-title">Thank you!</div>
+                <div className="roam-feedback-success-sub">Your feedback has been submitted successfully.</div>
+              </div>
+            ) : (
+              <>
+                {/* Header */}
+                <div className="roam-feedback-header">
+                  <div className="roam-feedback-header-left">
+                    <div className="roam-feedback-avatar-ring">
+                      <ScholarSVG blinking={false} moving={false} size={36} />
+                    </div>
+                    <div>
+                      <div className="roam-feedback-title">Submit Feedback</div>
+                      <div className="roam-feedback-subtitle">Help us improve Journal Finder</div>
+                    </div>
+                  </div>
+                  <button className="roam-help-close" onClick={() => setFeedback(false)}>✕</button>
+                </div>
+
+                <div className="roam-feedback-body">
+                  {/* Feedback type chips */}
+                  <div className="roam-feedback-label">Feedback Type</div>
+                  <div className="roam-feedback-chips">
+                    {FEEDBACK_TYPES.map(t => (
+                      <button
+                        key={t.key}
+                        className={`roam-feedback-chip ${fbType === t.key ? 'roam-feedback-chip--active' : ''}`}
+                        onClick={() => setFbType(t.key)}
+                      >
+                        <span>{t.icon}</span>
+                        <span>{t.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Star rating */}
+                  <div className="roam-feedback-label">Rating <span className="roam-feedback-optional">(optional)</span></div>
+                  <div className="roam-feedback-stars">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button
+                        key={star}
+                        className={`roam-feedback-star ${star <= (fbHover || fbRating) ? 'roam-feedback-star--filled' : ''}`}
+                        onClick={() => setFbRating(star === fbRating ? 0 : star)}
+                        onMouseEnter={() => setFbHover(star)}
+                        onMouseLeave={() => setFbHover(0)}
+                        aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                      >
+                        <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                            fill={star <= (fbHover || fbRating) ? 'currentColor' : 'none'}
+                            stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Message textarea */}
+                  <div className="roam-feedback-label">Your Message</div>
+                  <textarea
+                    className="roam-feedback-textarea"
+                    placeholder="Tell us what you think… describe a bug, request a feature, or share any thoughts."
+                    value={fbMessage}
+                    onChange={e => setFbMessage(e.target.value)}
+                    rows={4}
+                  />
+
+                  {/* Submit */}
+                  <button
+                    className="roam-feedback-submit"
+                    onClick={submitFeedback}
+                    disabled={!fbMessage.trim() || fbSending}
+                  >
+                    {fbSending ? (
+                      <span className="roam-feedback-spinner" />
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{marginRight: 6}}>
+                          <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Send Feedback
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -235,6 +235,7 @@ def hybrid_search(
             "weeks_to_publish":  row.get("weeks_to_publish",  None),
             "months_to_publish": row.get("months_to_publish", None),
             "in_doaj":           row.get("in_doaj",           False),
+            "mahe_approved":     row.get("mahe_approved",     0),
         })
 
     elapsed = time.time() - t0

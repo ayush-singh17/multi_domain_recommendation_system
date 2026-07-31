@@ -49,3 +49,26 @@ class SavedJournal(models.Model):
 
     def __str__(self):
         return f"{self.user.email} — {self.journal_title}"
+
+
+class Feedback(models.Model):
+    """User-submitted feedback: bug reports, feature requests, or general comments."""
+    FEEDBACK_TYPES = [
+        ('bug', 'Bug Report'),
+        ('feature', 'Feature Request'),
+        ('general', 'General Feedback'),
+    ]
+
+    user          = models.ForeignKey(settings.AUTH_USER_MODEL,
+                                      on_delete=models.CASCADE,
+                                      related_name='feedbacks')
+    feedback_type = models.CharField(max_length=20, choices=FEEDBACK_TYPES, default='general')
+    rating        = models.IntegerField(null=True, blank=True)   # 1–5 stars (optional)
+    message       = models.TextField()
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} — {self.feedback_type} — {self.created_at.strftime('%Y-%m-%d %H:%M')}"

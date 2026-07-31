@@ -33,7 +33,6 @@ secrets.yaml
 *.safetensors
 
 # ── Large data / CSV files ────────────────────────────────────────────────────
-*.csv           # scimagojr_*.csv, journals_clean.csv, journal_trends.csv etc.
 *.xlsx          # journals.xlsx, journals 2.xlsx
 *.xls
 backup.sql      # database dump

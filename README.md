@@ -39,7 +39,7 @@ Each recommendation includes a risk assessment, historical trend charts, submiss
 │  BM25 Sparse Retrieval → SPECTER2 Dense Reranking           │
 │  → Risk Assessment → Weighted Scoring → Strategy Split      │
 │  → Explainability Layer → PDF Generation                    │
-│                                                             │
+│  │                                                           │
 │  Assets loaded ONCE at startup:                             │
 │  bm25_index.pkl · journal_embeddings.npy · trends.csv       │
 └─────────────────────────────────────────────────────────────┘
@@ -314,7 +314,5 @@ The `/pdf` endpoint runs the full recommendation pipeline and streams a dynamica
 - Personalised recommendation explanations
 
 Generated server-side with ReportLab — no client-side rendering required.
-
----
 
 *Built as part of a supervised research project — July 2026*

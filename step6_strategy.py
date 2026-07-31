@@ -104,9 +104,9 @@ def assign_plans(results: pd.DataFrame) -> dict:
         plan_c.append(fallback_pool.pop(0))
 
     return {
-        "A": pd.DataFrame(plan_a[:3]).reset_index(drop=True),
-        "B": pd.DataFrame(plan_b[:3]).reset_index(drop=True),
-        "C": pd.DataFrame(plan_c[:5]).reset_index(drop=True),
+        "A": pd.DataFrame(plan_a).reset_index(drop=True),
+        "B": pd.DataFrame(plan_b).reset_index(drop=True),
+        "C": pd.DataFrame(plan_c).reset_index(drop=True),
     }
 
 

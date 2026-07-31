@@ -3,6 +3,7 @@ from .views import (
     RecommendView, PDFView,
     SearchHistoryView, SearchDeleteView,
     SavedJournalListCreateView, SavedJournalDeleteView,
+    FeedbackCreateView,
 )
 
 urlpatterns = [
@@ -12,4 +13,6 @@ urlpatterns = [
     path('history/<int:pk>/',  SearchDeleteView.as_view(),         name='history_delete'),
     path('saved/',             SavedJournalListCreateView.as_view(), name='saved'),
     path('saved/<int:pk>/',    SavedJournalDeleteView.as_view(),   name='saved_delete'),
+    path('feedback/',          FeedbackCreateView.as_view(),       name='feedback'),
 ]
+
