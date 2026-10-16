@@ -57,7 +57,9 @@ def load_model():
     print(f"  Loading model: {MODEL_NAME}")
     print(f"  (First run downloads ~400MB — cached after that)")
 
-    model = SentenceTransformer(MODEL_NAME)
+    local_model = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "specter2_base")
+    model_target = local_model if os.path.exists(local_model) else MODEL_NAME
+    model = SentenceTransformer(model_target)
 
     # Move to GPU if available
     import torch

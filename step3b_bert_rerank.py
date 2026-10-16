@@ -31,7 +31,7 @@ from collections import defaultdict
 EMBEDDINGS_FILE = "journal_embeddings.npy"
 TEXTS_FILE      = "bert_texts.pkl"
 MODEL_NAME      = "allenai/specter2_base"
-ALPHA           = 0.8    # BERT weight  (1-ALPHA = BM25 weight)
+ALPHA           = 0.85    # BERT weight  (1-ALPHA = BM25 weight)
 BM25_CANDIDATES = 100    # BM25 retrieves this many; BERT reranks them
 FINAL_TOP_N     = 20     # final candidates passed to risk + ranking
 # ─────────────────────────────────────────────────────────────────────────────
@@ -48,10 +48,14 @@ def load_bert_resources():
     with open(TEXTS_FILE, "rb") as f:
         texts = pickle.load(f)
 
-    print(f"  Loading BERT model: {MODEL_NAME}")
+    import os
+    local_model = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "specter2_base")
+    model_target = local_model if os.path.exists(local_model) else MODEL_NAME
+
+    print(f"  Loading BERT model: {model_target}")
     from sentence_transformers import SentenceTransformer
     import torch
-    model = SentenceTransformer(MODEL_NAME)
+    model = SentenceTransformer(model_target)
     if torch.cuda.is_available():
         model = model.to(torch.device("cuda"))
         print(f"  GPU: {torch.cuda.get_device_name(0)}")
@@ -157,6 +161,7 @@ def hybrid_search(
     model,
     df,
     top_n:       int = FINAL_TOP_N,
+    quota:       dict = None,
 ) -> "pd.DataFrame":
     """
     Full hybrid pipeline:
@@ -202,7 +207,24 @@ def hybrid_search(
         combined[doc_id] = (1 - ALPHA) * k_score + ALPHA * b_score
 
     # ── Step 5: Take top_n ────────────────────────────────────────────────
-    top_results = sorted(combined.items(), key=lambda x: -x[1])[:top_n]
+    ranked_all = sorted(combined.items(), key=lambda x: -x[1])
+    if quota:
+        # Candidate pool PER QUARTILE GROUP: walk down the relevance ranking and keep
+        # each journal until its group (Q1 / Q2 / Q3Q4) is full. This stops Q2-Q4
+        # journals from using up slots that Q1 journals should get.
+        quartiles = df["SJR Best Quartile"].values
+        group_of  = lambda q: q if q in ("Q1", "Q2") else "Q3Q4"
+        taken     = {"Q1": 0, "Q2": 0, "Q3Q4": 0}
+        top_results = []
+        for doc_id, score in ranked_all:
+            g = group_of(quartiles[doc_id])
+            if taken[g] < quota.get(g, 0):
+                taken[g] += 1
+                top_results.append((doc_id, score))
+                if all(taken[k] >= quota.get(k, 0) for k in taken):
+                    break
+    else:
+        top_results = ranked_all[:top_n]
 
     # ── Step 6: Build result DataFrame ───────────────────────────────────
     rows = []

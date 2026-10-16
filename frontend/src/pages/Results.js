@@ -144,12 +144,12 @@ export default function Results() {
         return hOk && sjrOk && tagOk;
       });
 
-      // If activeTag is selected, we show all matches (no slicing).
-      // Otherwise, we limit to the recommended count (3 for A/B, 5 for C).
+      // Tags reveal the matching options returned by the backend.
+      // With no tag selected, show at most ten recommendations in total.
       if (activeTag) {
         return filtered;
       } else {
-        const limit = planKey === 'C' ? 5 : 3;
+        const limit = planKey === 'C' ? 4 : 3;
         return filtered.slice(0, limit);
       }
     };

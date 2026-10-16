@@ -1,0 +1,4 @@
+,recall@1,recall@5,recall@10,MRR
+A old text,0.213,0.508,0.649,0.353
+B enriched (no titles),0.384,0.688,0.806,0.526
+C enriched + titles,0.482,0.767,0.857,0.612

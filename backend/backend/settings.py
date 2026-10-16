@@ -15,7 +15,8 @@ load_dotenv(BASE_DIR / '.env')
 
 
 # ── Core ───────────────────────────────────────────────────────────────────────
-SECRET_KEY = os.environ.get('SECRET_KEY')
+# ── Core ───────────────────────────────────────────────────────────────────────
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-journal-finder-secret-key-39182371923')
 DEBUG      = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
@@ -74,17 +75,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 
-# ── Database (MySQL) ───────────────────────────────────────────────────────────
-DATABASES = {
-    'default': {
-        'ENGINE':   'django.db.backends.mysql',
-        'NAME':     os.environ.get('DB_NAME', 'journal_finder'),
-        'USER':     os.environ.get('DB_USER', 'root'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST':     os.environ.get('DB_HOST', 'localhost'),
-        'PORT':     os.environ.get('DB_PORT', '3306'),
+# ── Database ───────────────────────────────────────────────────────────────────
+DB_ENGINE = os.environ.get('DB_ENGINE', 'django.db.backends.mysql')
+if 'sqlite' in DB_ENGINE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / os.environ.get('DB_NAME', 'db.sqlite3'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE':   DB_ENGINE,
+            'NAME':     os.environ.get('DB_NAME', 'journal_finder'),
+            'USER':     os.environ.get('DB_USER', 'root'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST':     os.environ.get('DB_HOST', '127.0.0.1'),
+            'PORT':     os.environ.get('DB_PORT', '3306'),
+        }
+    }
 
 
 # ── Auth ───────────────────────────────────────────────────────────────────────

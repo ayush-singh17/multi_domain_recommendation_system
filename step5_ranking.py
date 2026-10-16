@@ -171,7 +171,7 @@ def display_ranked(results: pd.DataFrame):
 def get_ranked_results(
     abstract: str, df, bm25_index, embeddings, model,
     top_n: int = 20, focus: str = "General / Best Fit",
-    prestige_weight: float = 1.0
+    prestige_weight: float = 1.0, quota: dict = None
 ) -> pd.DataFrame:
     """
     Full hybrid pipeline: hybrid_search -> risk -> rank.
@@ -179,7 +179,7 @@ def get_ranked_results(
     prestige_weight: 1.0 = full prestige, 0.0 = full speed, 0.5 = balanced
     """
     from step3b_bert_rerank import hybrid_search
-    candidates = hybrid_search(abstract, bm25_index, embeddings, model, df, top_n=top_n)
+    candidates = hybrid_search(abstract, bm25_index, embeddings, model, df, top_n=top_n, quota=quota)
     assessed   = assess_risk(candidates, abstract)
     ranked = rank(assessed, focus=focus, prestige_weight=prestige_weight, abstract=abstract)
     return ranked
