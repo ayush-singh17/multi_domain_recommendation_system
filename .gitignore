@@ -64,3 +64,7 @@ desktop.ini
 *.swp
 *.swo
 *~
+models/
+collected/
+emb_v2_parts/
+pilot_cache/
