@@ -252,22 +252,8 @@ def recommend(req: RecommendRequest):
                                     focus=req.focus, prestige_weight=req.prestige_weight)
         explained = explain_strategy(strategy, search_text, df, search_mode=req.search_mode)
 
-        # ── Collect all journals across plans for concurrent link fetching ──
-        all_titles = []
-        for plan_key in ["A", "B", "C"]:
-            for exp in explained.get(plan_key, []):
-                all_titles.append(exp["title"])
-
-        # Fetch homepage URLs concurrently (max 10 workers) — avoids serial latency
-        link_map = {}  # title -> url | None
-        with ThreadPoolExecutor(max_workers=10) as pool:
-            future_to_title = {pool.submit(get_journal_link, t): t for t in all_titles}
-            for future in as_completed(future_to_title):
-                title = future_to_title[future]
-                try:
-                    link_map[title] = future.result()
-                except Exception:
-                    link_map[title] = None
+        # Homepage lookup is requested lazily for the visible page.
+        link_map = {}
 
         # Serialise to plain dicts for JSON response
         plans = {}
@@ -320,6 +306,7 @@ def recommend(req: RecommendRequest):
             "plans":       plans,
             "stats": {
                 "total":    total,
+                "recommended_total": sum(len(options) for options in plans.values()),
                 "q1_count": q1_count,
                 "low_risk": low_risk,
             },
@@ -426,3 +413,38 @@ def generate_pdf_endpoint(req: PDFRequest):
 
 # Trigger reload for parent module change: step6_strategy updated to unsliced plans.
 
+
+
+@app.get("/journals")
+def search_journals(q: str = ""):
+    """Search the full local catalogue for timeline selection."""
+    if not _resources.get("ready"):
+        raise HTTPException(status_code=503, detail="ML service still loading")
+    from ml_service.journal_catalog import search_catalog
+    return sanitise(search_catalog(_resources["df"], q))
+
+
+class JournalLinksRequest(BaseModel):
+    titles: list[str]
+
+
+@app.post("/journal-links")
+def journal_links(req: JournalLinksRequest):
+    """Resolve links for one visible page without delaying recommendation ranking."""
+    if not _resources.get("ready"):
+        raise HTTPException(status_code=503, detail="ML service still loading")
+    if len(req.titles) > 30:
+        raise HTTPException(status_code=400, detail="At most 30 titles per page")
+    known = set(_resources["df"]["Title"].dropna().astype(str))
+    titles = list(dict.fromkeys(t for t in req.titles if t in known))
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        urls = list(pool.map(cached_journal_link, titles))
+    return {"links": dict(zip(titles, urls))}
+
+
+from functools import lru_cache
+
+
+@lru_cache(maxsize=2048)
+def cached_journal_link(title):
+    return get_journal_link(title)

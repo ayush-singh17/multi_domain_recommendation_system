@@ -183,3 +183,35 @@ class FeedbackCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+
+
+class JournalCatalogView(APIView):
+    """Authenticated proxy for dataset-wide timeline journal autocomplete."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        try:
+            upstream = requests.get(f"{ML_URL}/journals",
+                                    params={"q": request.query_params.get("q", "")}, timeout=15)
+            upstream.raise_for_status()
+            return Response(upstream.json())
+        except requests.exceptions.RequestException:
+            return Response({"error": "Journal search is unavailable. Please retry."},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class JournalLinksView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        titles = request.data.get("titles", [])
+        if not isinstance(titles, list) or len(titles) > 30 or any(not isinstance(t, str) for t in titles):
+            return Response({"error": "Provide at most 30 journal titles."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            upstream = requests.post(f"{ML_URL}/journal-links", json={"titles": titles}, timeout=45)
+            upstream.raise_for_status()
+            return Response(upstream.json())
+        except requests.exceptions.RequestException:
+            return Response({"error": "Homepage links are temporarily unavailable."},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)

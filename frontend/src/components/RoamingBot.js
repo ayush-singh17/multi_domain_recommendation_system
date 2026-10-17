@@ -111,10 +111,10 @@ const TOURS = {
       },
     },
     {
-      element: '.plan-section',
+      element: '.results-page-toolbar',
       popover: {
-        title: '📁 3-Tier Strategy Plans',
-        description: 'Plan A = Ambitious Q1 targets — highest impact, most competitive. Plan B = Balanced Q2 journals — strong acceptance odds with solid reputation. Plan C = Safety net — high-acceptance indexed journals for a guaranteed publication. Submit to A first, move to B or C only after rejection.',
+        title: '📋 Ranked Results & Pagination',
+        description: 'Browse eligible recommendations in descending score order. Choose 10, 20, or 30 results per page. Filters apply to the complete returned list before pagination.',
         side: 'top', align: 'start',
       },
     },
@@ -135,10 +135,10 @@ const TOURS = {
       },
     },
     {
-      element: '.timeline-card, .submission-timeline',
+      element: '.results-subnav',
       popover: {
         title: '🗓️ Submission Roadmap',
-        description: 'A dynamic timeline that re-renders every time you apply a filter tag. It shows optimal submission windows for each plan, parallel-track strategy (submit to A and B simultaneously), and estimated response dates based on the average time-to-review of your filtered journals.',
+        description: 'Open Timeline Calculator to search the journal dataset, select and reorder journals, and edit assumed decision times. Each next submission follows the previous decision and revision period. Selections stay in place when you filter results.',
         side: 'top', align: 'start',
       },
     },
@@ -164,11 +164,11 @@ const TOURS = {
 const HELP_CONTENT = [
   { icon: '📄', title: 'Abstract Mode',      desc: 'Paste 100–250 words. BERT reads full semantic meaning for the most accurate matches.' },
   { icon: '🏷️', title: 'Keyword Mode',       desc: 'Add up to 10 topics. They\'re expanded into semantic context automatically before ranking.' },
-  { icon: '📁', title: 'Strategy Tiers',     desc: 'Plan A = Q1 ambition, Plan B = balanced Q2, Plan C = safe high-acceptance fallback.' },
+  { icon: '📋', title: 'Ranked Results',     desc: 'Browse the full returned recommendation list in score order with 10, 20, or 30 journals per page.' },
   { icon: '🔖', title: 'Q1–Q4 Tag Filters',  desc: 'Filter results by SciMago quartile. Q1 = top 25% impact. Click a tag chip on the results page.' },
   { icon: '💡', title: 'Why Recommended',    desc: 'Expand the accordion on any journal card to see matched tokens, relevance reasoning, and score breakdown.' },
   { icon: '📥', title: 'PDF Report',         desc: 'Download a formatted PDF of your full 3-tier strategy to share with co-authors or advisors.' },
-  { icon: '🗓️', title: 'Submission Roadmap', desc: 'A live timeline that updates with every filter. Shows when to submit to each plan.' },
+  { icon: '🗓️', title: 'Submission Roadmap', desc: 'Choose journals and order your own sequence, with editable decision and revision time estimates.' },
   { icon: '📁', title: 'History Tab',        desc: 'Every search is saved. Revisit past results anytime from the History tab in the navbar.' },
 ];
 

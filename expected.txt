@@ -9,7 +9,7 @@ Computer Methods and Programs in Biomedicine
 Journal of Biomedical Informatics
 Biomedical Signal Processing and Control
 Artificial Intelligence Review
-Pattern Recognition
+Pattern Recognition Letters
 Expert Systems with Applications
 Information Sciences
 Biocybernetics and Biomedical Engineering
@@ -17,3 +17,6 @@ Multimedia tools and applications
 Future Generation Computer Systems
 Environmental Modelling & Software
 Applied Soft Computing
+Ultrasonics
+Internet of Things (The Netherlands)
+Intelligent Computing
