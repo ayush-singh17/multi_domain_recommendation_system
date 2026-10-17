@@ -12,8 +12,8 @@ Plan Assignment Logic:
   Plan B — Balanced   : Q2 journals, risk != High  (realistic target)
   Plan C — Safe       : Best remaining non-High-risk journals by final_score
 
-Returns up to 30 Q1 options in Plan A and up to 10 in Plans B and C.
-The results page displays a shorter list until a tag is selected.
+Returns every eligible journal from the ranked candidate pool.
+The results page handles pagination; no per-plan display quotas apply.
 """
 
 import pandas as pd
@@ -119,26 +119,16 @@ def build_strategy(abstract: str, df, bm25_index, embeddings, model,
     focus: optional domain filter passed through to ranking.
     Returns a dict with plans A, B, C and their metadata.
     """
-    # A quartile tag can only reveal journals returned by this pipeline.
-    # Grow the candidate pool until Plan A contains 30 eligible Q1 journals.
-    # Bound the work so a query with few eligible Q1 journals still responds.
-    max_candidates = min(1600, len(df))
-    candidate_count = min(200, max_candidates)
-    while True:
-        ranked = get_ranked_results(abstract, df, bm25_index, embeddings, model,
-                                    top_n=candidate_count, focus=focus,
-                                    prestige_weight=prestige_weight)
-        plans = assign_plans(ranked)
-        q1_count = (plans["A"]["Quartile"] == "Q1").sum() if not plans["A"].empty else 0
-        if q1_count >= 30 or candidate_count >= max_candidates:
-            break
-        candidate_count = min(candidate_count * 2, max_candidates)
+    # Fetch a large candidate pool in one pass so that focus-boosted journals
+    # (which are boosted *after* retrieval) are not excluded prematurely.
+    max_candidates = min(4000, len(df))
+    ranked = get_ranked_results(abstract, df, bm25_index, embeddings, model,
+                                top_n=max_candidates, focus=focus,
+                                prestige_weight=prestige_weight)
+    plans = assign_plans(ranked)
 
-    # Send enough options for the Q1 tag without explaining and fetching links
-    # for the entire candidate pool. The frontend controls the default display.
-    plans["A"] = plans["A"].head(30)
-    plans["B"] = plans["B"].head(10)
-    plans["C"] = plans["C"].head(10)
+    # Return all eligible ranked matches; pagination belongs to the results UI.
+    # Candidate retrieval and relevance/risk rules remain the search boundaries.
 
     return {
         "plans":  plans,

@@ -1,229 +1,80 @@
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useState, useMemo } from 'react';
-import PlanSection from '../components/PlanSection';
+import { useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import JournalCard from '../components/JournalCard';
 import CompareModal from '../components/CompareModal';
-import SubmissionTimeline from '../components/SubmissionTimeline';
+import TimelineBuilder from '../components/TimelineBuilder';
+import { journalKey, rankedJournals, filterJournals, capDefaultMix, timelineEntry } from '../utils/results';
 import API from '../api/axios';
+import './ResultsWorkspace.css';
 
-// ── Mirrors timeline_calculator.py — runs entirely in the browser ─────────────
-const QUARTILE_FALLBACK = { Q1: 20, Q2: 16, Q3: 12, Q4: 10, Unranked: 10 };
-const REVISION_WEEKS    = 2;
-
-function getReviewWeeks(journal) {
-  const raw = journal?.weeks_to_publish;
-  if (raw != null && raw !== '' && raw !== 'None') {
-    const n = parseFloat(raw);
-    if (!isNaN(n)) return [Math.round(n), false];
-  }
-  const q = journal?.quartile ?? 'Q2';
-  return [QUARTILE_FALLBACK[q] ?? 16, true];
-}
-
-function weeksToDisplay(weeks) {
-  const months = Math.round((weeks / 4.33) * 10) / 10;
-  return `~${weeks} weeks (~${months} months)`;
-}
-
-function buildDynamicTimeline(filteredPlans) {
-  const per_plan = {};
-
-  for (const key of ['A', 'B', 'C']) {
-    const journals = filteredPlans[key] || [];
-    if (journals.length === 0) { per_plan[key] = null; continue; }
-    const top = journals[0];
-    const [weeks, estimated] = getReviewWeeks(top);
-    per_plan[key] = {
-      title:        top.title ?? '',
-      quartile:     top.quartile ?? '',
-      weeks,
-      is_estimated: estimated,
-      display:      weeksToDisplay(weeks),
-      source:       estimated ? 'Estimated from quartile avg.' : 'DOAJ publisher data',
-    };
-  }
-
-  const a = per_plan.A, b = per_plan.B, c = per_plan.C;
-  const scenarios = {};
-
-  if (a) {
-    scenarios.optimistic = {
-      label:   'Optimistic',
-      desc:    `Accepted at ${a.title.slice(0, 40)}${a.title.length > 40 ? '…' : ''}`,
-      weeks:   a.weeks,
-      display: weeksToDisplay(a.weeks),
-      steps: [
-        { plan: 'A', action: 'Submit', journal: a.title, weeks: a.weeks },
-      ],
-    };
-  }
-
-  if (a && b) {
-    const total = a.weeks + REVISION_WEEKS + b.weeks;
-    scenarios.realistic = {
-      label:   'Realistic',
-      desc:    `Rejected at A → accepted at ${b.title.slice(0, 40)}${b.title.length > 40 ? '…' : ''}`,
-      weeks:   total,
-      display: weeksToDisplay(total),
-      steps: [
-        { plan: 'A', action: 'Submit', journal: a.title, weeks: a.weeks },
-        { plan: '',  action: 'Revise', journal: 'Revise & reformat paper', weeks: REVISION_WEEKS },
-        { plan: 'B', action: 'Submit', journal: b.title, weeks: b.weeks },
-      ],
-    };
-  }
-
-  if (a && b && c) {
-    const total = a.weeks + REVISION_WEEKS + b.weeks + REVISION_WEEKS + c.weeks;
-    scenarios.worst_case = {
-      label:   'Worst Case',
-      desc:    `Rejected at A and B → accepted at ${c.title.slice(0, 40)}${c.title.length > 40 ? '…' : ''}`,
-      weeks:   total,
-      display: weeksToDisplay(total),
-      steps: [
-        { plan: 'A', action: 'Submit', journal: a.title, weeks: a.weeks },
-        { plan: '',  action: 'Revise', journal: 'Revise & reformat paper', weeks: REVISION_WEEKS },
-        { plan: 'B', action: 'Submit', journal: b.title, weeks: b.weeks },
-        { plan: '',  action: 'Revise', journal: 'Revise & reformat paper', weeks: REVISION_WEEKS },
-        { plan: 'C', action: 'Submit', journal: c.title, weeks: c.weeks },
-      ],
-    };
-  }
-
-  let advice;
-  if (a && b) {
-    const optW  = scenarios.optimistic?.weeks ?? 0;
-    const realW = scenarios.realistic?.weeks  ?? 0;
-    advice = `Start with Plan A. If accepted, you'll be published in ${weeksToDisplay(optW)}. ` +
-             `If rejected, expect the full process to take ${weeksToDisplay(realW)} through Plan B. ` +
-             `Use the rejection feedback to strengthen your paper before resubmitting.`;
-  } else if (a) {
-    advice = `Submit to Plan A. Expected review time: ${a.display}.`;
-  } else if (b) {
-    advice = `Only Plan B journals are visible with the current filters. Expected review time: ${b.display}.`;
-  } else if (c) {
-    advice = `Only Plan C journals are visible with the current filters. Expected review time: ${c.display}.`;
-  } else {
-    advice = null; // signal: no journals visible at all
-  }
-
-  return { per_plan, scenarios, advice };
-}
-// ─────────────────────────────────────────────────────────────────────────────
+const EMPTY_PLANS = {};
+const TAGS = [['Q1','tag-q1'],['Q2','tag-q2'],['Q3','tag-q3'],['Q4','tag-q4'],['Low Risk','tag-risk-low'],['Medium Risk','tag-risk-med'],['MAHE Approved','tag-mahe']];
 
 export default function Results() {
   const location = useLocation();
   const navigate = useNavigate();
-
   const [downloading, setDownloading] = useState(false);
   const [compareList, setCompareList] = useState([]);
-  const [showModal, setShowModal]     = useState(false);
-  const [activeTag, setActiveTag]     = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [activeTag, setActiveTag] = useState(null);
+  const [tab, setTab] = useState('results');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [selectedJournals, setSelectedJournals] = useState([]);
+  const [linkMap, setLinkMap] = useState({});
+  const { results, abstract, focus = 'General / Best Fit', minHIndex = 0, minSJR = 0, searchMode, keywords } = location.state || {};
+  const { plans = EMPTY_PLANS, stats = {}, warnings = [] } = results || {};
+  const allJournals = useMemo(() => rankedJournals(plans), [plans]);
+  const numericMatches = useMemo(() => filterJournals(allJournals, minHIndex, minSJR, null), [allJournals, minHIndex, minSJR]);
+  const filteredJournals = useMemo(() => activeTag
+    ? filterJournals(numericMatches, 0, 0, activeTag)
+    : capDefaultMix(numericMatches), [numericMatches, activeTag]);
+  const tagCounts = useMemo(() => Object.fromEntries(TAGS.map(([tag]) => [tag, filterJournals(numericMatches, 0, 0, tag).length])), [numericMatches]);
+  const pageCount = Math.max(1, Math.ceil(filteredJournals.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageJournals = useMemo(() => filteredJournals.slice(pageStart, pageStart + pageSize), [filteredJournals, pageStart, pageSize]);
+  useEffect(() => { setPage(1); }, [activeTag, minHIndex, minSJR, pageSize, plans]);
 
-  const { results, abstract, focus, minHIndex = 0, minSJR = 0, searchMode, keywords } = location.state || {};
-  const { plans = {}, stats = {}, warnings = [] } = results || {};
-
-  // Apply filters (H-index, SJR, and active tag) to all three plans
-  const filteredPlans = useMemo(() => {
-    const apply = (journals, planKey) => {
-      if (!journals) return [];
-      const filtered = journals.filter(j => {
-        const hOk   = minHIndex === 0 || (j.h_index != null && parseFloat(j.h_index) >= minHIndex);
-        const sjrOk = minSJR   === 0 || (j.sjr     != null && parseFloat(j.sjr)      >= minSJR);
-        let tagOk   = true;
-        if (activeTag) {
-          if (['Q1','Q2','Q3','Q4'].includes(activeTag)) {
-            tagOk = j.quartile === activeTag;
-          } else if (activeTag === 'Low Risk') {
-            tagOk = j.risk_level === 'Low';
-          } else if (activeTag === 'Medium Risk') {
-            tagOk = j.risk_level === 'Medium';
-          } else if (activeTag === 'MAHE Approved') {
-            tagOk = j.mahe_approved === 1;
-          }
-        }
-        return hOk && sjrOk && tagOk;
+  // Resolve links only for the visible page, instead of blocking on hundreds of lookups.
+  useEffect(() => {
+    if (tab !== 'results') return;
+    const titles = pageJournals.filter(j => !j.homepage_url && !(j.title in linkMap)).map(j => j.title);
+    if (!titles.length) return;
+    const controller = new AbortController();
+    API.post('/search/journal-links/', { titles }, { signal: controller.signal })
+      .then(({ data }) => setLinkMap(previous => ({ ...previous, ...data.links })))
+      .catch(() => {
+        if (!controller.signal.aborted) setLinkMap(previous => ({ ...previous, ...Object.fromEntries(titles.map(t => [t, null])) }));
       });
+    return () => controller.abort();
+  }, [pageJournals, tab, linkMap]);
 
-      // Tags reveal the matching options returned by the backend.
-      // With no tag selected, show at most ten recommendations in total.
-      if (activeTag) {
-        return filtered;
-      } else {
-        const limit = planKey === 'C' ? 4 : 3;
-        return filtered.slice(0, limit);
-      }
-    };
-    return { 
-      A: apply(plans.A, 'A'), 
-      B: apply(plans.B, 'B'), 
-      C: apply(plans.C, 'C') 
-    };
-  }, [plans, minHIndex, minSJR, activeTag]);
-
-  // ── Dynamic timeline recomputed from whatever journals are currently visible ──
-  const dynamicTimeline = useMemo(() => buildDynamicTimeline(filteredPlans), [filteredPlans]);
-
-  // Count matching journals per tag across all plans (before tag filter, after other filters)
-  const tagCounts = useMemo(() => {
-    const allRaw = [...(plans.A || []), ...(plans.B || []), ...(plans.C || [])].filter(j => {
-      const hOk   = minHIndex === 0 || (j.h_index != null && parseFloat(j.h_index) >= minHIndex);
-      const sjrOk = minSJR   === 0 || (j.sjr     != null && parseFloat(j.sjr)      >= minSJR);
-      return hOk && sjrOk;
-    });
-    const count = (fn) => allRaw.filter(fn).length;
-    return {
-      'Q1':          count(j => j.quartile   === 'Q1'),
-      'Q2':          count(j => j.quartile   === 'Q2'),
-      'Q3':          count(j => j.quartile   === 'Q3'),
-      'Q4':          count(j => j.quartile   === 'Q4'),
-      'Low Risk':    count(j => j.risk_level === 'Low'),
-      'Medium Risk': count(j => j.risk_level === 'Medium'),
-      'MAHE Approved': count(j => j.mahe_approved === 1),
-    };
-  }, [plans, minHIndex, minSJR]);
-
-  // Calculate dynamic showing counts of Q1 and Low Risk recommended journals
-  const showingQ1 = useMemo(() => {
-    return [...filteredPlans.A, ...filteredPlans.B, ...filteredPlans.C].filter(j => j.quartile === 'Q1').length;
-  }, [filteredPlans]);
-
-  const showingLowRisk = useMemo(() => {
-    return [...filteredPlans.A, ...filteredPlans.B, ...filteredPlans.C].filter(j => j.risk_level === 'Low').length;
-  }, [filteredPlans]);
-
-  // Early return AFTER all hooks
-  if (!results) { navigate('/'); return null; }
-
-  const totalAll     = (plans.A?.length || 0) + (plans.B?.length || 0) + (plans.C?.length || 0);
-  const totalShowing = filteredPlans.A.length + filteredPlans.B.length + filteredPlans.C.length;
-  const hiddenCount  = totalAll - totalShowing;
-  const isFiltered   = minHIndex > 0 || minSJR > 0;
-
-  const handleCompareToggle = (j) => {
-    setCompareList(prev => {
-      const exists = prev.find(x => x.issn === j.issn);
-      if (exists) return prev.filter(x => x.issn !== j.issn);
-      if (prev.length >= 3) { alert('Max 3 journals for comparison.'); return prev; }
-      return [...prev, j];
-    });
-  };
-
+  const addToTimeline = journal => setSelectedJournals(previous =>
+    previous.some(j => journalKey(j) === journalKey(journal)) ? previous : [...previous, timelineEntry(journal)]);
+  const showingQ1 = filteredJournals.filter(j => j.quartile === 'Q1').length;
+  const showingLowRisk = filteredJournals.filter(j => j.risk_level === 'Low').length;
+  const totalAll = allJournals.length;
+  const totalShowing = filteredJournals.length;
+  const hiddenCount = totalAll - totalShowing;
+  const isFiltered = minHIndex > 0 || minSJR > 0;
+  const handleCompareToggle = journal => setCompareList(previous => {
+    if (previous.some(j => journalKey(j) === journalKey(journal))) return previous.filter(j => journalKey(j) !== journalKey(journal));
+    if (previous.length >= 3) { alert('Max 3 journals for comparison.'); return previous; }
+    return [...previous, journal];
+  });
   const handleDownloadPDF = async () => {
     setDownloading(true);
     try {
-      const res = await API.post('/search/recommend/pdf/', {
-        abstract,
-        focus,
-        search_mode: searchMode || 'abstract',
-        keywords: keywords || [],
-      }, { responseType: 'blob' });
-      const url  = window.URL.createObjectURL(new Blob([res.data]));
+      const res = await API.post('/search/recommend/pdf/', { abstract, focus, search_mode: searchMode || 'abstract', keywords: keywords || [] }, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url; link.download = 'journal_recommendations.pdf'; link.click();
       window.URL.revokeObjectURL(url);
     } catch { alert('PDF generation failed.'); }
     finally { setDownloading(false); }
   };
+  if (!results) return <Navigate to="/" replace />;
 
   return (
     <div className="results-container">
@@ -303,15 +154,43 @@ export default function Results() {
         </div>
       )}
 
-      {/* ── Dynamic roadmap — reacts to every filter change ── */}
-      <SubmissionTimeline timeline={dynamicTimeline} totalShowing={totalShowing} />
+      <nav className="results-subnav" aria-label="Results sections">
+        <button type="button" aria-current={tab === 'results' ? 'page' : undefined} onClick={() => setTab('results')}>Results ({totalShowing})</button>
+        <button type="button" aria-current={tab === 'timeline' ? 'page' : undefined} onClick={() => setTab('timeline')}>Timeline Calculator{selectedJournals.length ? ` (${selectedJournals.length})` : ''}</button>
+      </nav>
 
-      <PlanSection plan="A" journals={filteredPlans.A} onCompareToggle={handleCompareToggle} compareList={compareList} />
-      <PlanSection plan="B" journals={filteredPlans.B} onCompareToggle={handleCompareToggle} compareList={compareList} />
-      <PlanSection plan="C" journals={filteredPlans.C} onCompareToggle={handleCompareToggle} compareList={compareList} />
+      <section hidden={tab !== 'results'} aria-label="Ranked recommendations">
+        {!activeTag && <p className="timeline-search-status">The default mix includes up to 2 Q3 and 2 Q4 journals. Select a quartile filter to see all its matches.</p>}
+        <div className="results-page-toolbar">
+          <div aria-live="polite">Showing <strong>{totalShowing ? pageStart + 1 : 0}–{Math.min(pageStart + pageSize, totalShowing)}</strong> of {totalShowing} matching recommendations · Highest score first</div>
+          <label>Per page <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))}>{[10, 20, 30].map(size => <option key={size} value={size}>{size}</option>)}</select></label>
+        </div>
+        <div className="plan-journals">
+          {pageJournals.map((journal, index) => {
+            const key = journalKey(journal);
+            const added = selectedJournals.some(j => journalKey(j) === key);
+            const displayed = { ...journal, homepage_url: journal.homepage_url || linkMap[journal.title] };
+            return <div key={key} className="ranked-result">
+              <div className="ranked-result-toolbar"><span>Match #{pageStart + index + 1}</span><button type="button" className="btn-secondary" disabled={added} onClick={() => addToTimeline(journal)}>{added ? 'Added to timeline' : '+ Add to timeline'}</button></div>
+              <JournalCard journal={displayed} planKey={journal._plan} onCompareToggle={handleCompareToggle} isCompared={compareList.some(j => journalKey(j) === key)} />
+            </div>;
+          })}
+        </div>
+        {totalShowing > 0 && <nav className="results-pagination" aria-label="Result pages">
+          <button type="button" disabled={currentPage === 1} onClick={() => setPage(1)}>First</button>
+          <button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Previous</button>
+          <label>Page <select aria-label="Page number" value={currentPage} onChange={e => setPage(Number(e.target.value))}>{Array.from({ length: pageCount }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</select> of {pageCount}</label>
+          <button type="button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>Next</button>
+          <button type="button" disabled={currentPage === pageCount} onClick={() => setPage(pageCount)}>Last</button>
+        </nav>}
+        {!totalShowing && !activeTag && !isFiltered && <p role="status">No eligible recommendations were returned for this search.</p>}
+      </section>
+      <section hidden={tab !== 'timeline'} aria-label="Timeline calculator">
+        <TimelineBuilder active={tab === 'timeline'} journals={selectedJournals} onChange={setSelectedJournals} onAdd={addToTimeline} />
+      </section>
 
       {/* No results after filtering */}
-      {totalShowing === 0 && (activeTag || isFiltered) && (
+      {tab === 'results' && totalShowing === 0 && (activeTag || isFiltered) && (
         <div style={{textAlign:'center', padding:'3rem 2rem', color:'var(--text-3)'}}>
           <div style={{fontSize:'1.5rem', marginBottom:'.75rem', opacity:.35}}>◎</div>
           <p style={{marginBottom:'1.25rem', fontSize:'.9rem'}}>No journals match your current filters.</p>

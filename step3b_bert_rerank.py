@@ -31,8 +31,8 @@ from collections import defaultdict
 EMBEDDINGS_FILE = "journal_embeddings.npy"
 TEXTS_FILE      = "bert_texts.pkl"
 MODEL_NAME      = "allenai/specter2_base"
-ALPHA           = 0.85    # BERT weight  (1-ALPHA = BM25 weight)
-BM25_CANDIDATES = 100    # BM25 retrieves this many; BERT reranks them
+ALPHA           = 0.85   # BERT weight  (1-ALPHA = BM25 weight)
+BM25_CANDIDATES = 200    # BM25 retrieves this many; BERT reranks them
 FINAL_TOP_N     = 20     # final candidates passed to risk + ranking
 # ─────────────────────────────────────────────────────────────────────────────
 

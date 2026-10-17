@@ -98,7 +98,7 @@ def rank(results: pd.DataFrame, focus: str = "General / Best Fit",
     """
     from step5c_focus_filter import apply_focus
 
-    MIN_RELEVANCE = 0.10
+    MIN_RELEVANCE = 0.05
 
     results = results.copy()
     results = apply_focus(results, focus)
