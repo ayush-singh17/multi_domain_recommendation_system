@@ -163,7 +163,7 @@ export default function Results() {
         {!activeTag && <p className="timeline-search-status">The default mix includes up to 2 Q3 and 2 Q4 journals. Select a quartile filter to see all its matches.</p>}
         <div className="results-page-toolbar">
           <div aria-live="polite">Showing <strong>{totalShowing ? pageStart + 1 : 0}–{Math.min(pageStart + pageSize, totalShowing)}</strong> of {totalShowing} matching recommendations · Highest score first</div>
-          <label>Per page <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))}>{[10, 20, 30].map(size => <option key={size} value={size}>{size}</option>)}</select></label>
+          <label className="results-page-size">Per page <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))}>{[10, 20, 30].map(size => <option key={size} value={size}>{size}</option>)}</select></label>
         </div>
         <div className="plan-journals">
           {pageJournals.map((journal, index) => {
@@ -177,11 +177,15 @@ export default function Results() {
           })}
         </div>
         {totalShowing > 0 && <nav className="results-pagination" aria-label="Result pages">
-          <button type="button" disabled={currentPage === 1} onClick={() => setPage(1)}>First</button>
-          <button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Previous</button>
-          <label>Page <select aria-label="Page number" value={currentPage} onChange={e => setPage(Number(e.target.value))}>{Array.from({ length: pageCount }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</select> of {pageCount}</label>
-          <button type="button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>Next</button>
-          <button type="button" disabled={currentPage === pageCount} onClick={() => setPage(pageCount)}>Last</button>
+          <div className="results-pagination-actions">
+            <button type="button" disabled={currentPage === 1} onClick={() => setPage(1)}>First</button>
+            <button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Previous</button>
+          </div>
+          <label className="results-pagination-page">Page <select aria-label="Page number" value={currentPage} onChange={e => setPage(Number(e.target.value))}>{Array.from({ length: pageCount }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}</select> of {pageCount}</label>
+          <div className="results-pagination-actions">
+            <button type="button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>Next</button>
+            <button type="button" disabled={currentPage === pageCount} onClick={() => setPage(pageCount)}>Last</button>
+          </div>
         </nav>}
         {!totalShowing && !activeTag && !isFiltered && <p role="status">No eligible recommendations were returned for this search.</p>}
       </section>

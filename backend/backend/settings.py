@@ -117,13 +117,9 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     # Rate limiting — protects the expensive /recommend endpoint
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle',
-    ],
+    'DEFAULT_THROTTLE_CLASSES': [],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '5/hour',      # unauthenticated (shouldn't reach here anyway)
-        'user': '30/hour',     # per logged-in user — adjust as needed
+        'recommend': '30/hour', 'light': '600/hour'   # per logged-in user — adjust as needed
     },
 }
 
