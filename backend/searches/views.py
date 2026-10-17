@@ -15,6 +15,7 @@ import requests
 from django.conf                 import settings
 from rest_framework              import generics, permissions, status
 from rest_framework.views        import APIView
+from rest_framework.throttling   import ScopedRateThrottle
 from rest_framework.response     import Response
 from django.http                 import HttpResponse
 from .models                     import Search, SavedJournal, Feedback
@@ -30,6 +31,8 @@ class RecommendView(APIView):
     Calls ML service, saves search to history, returns results.
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes   = [ScopedRateThrottle]
+    throttle_scope     = 'recommend'
 
     def post(self, request):
         abstract    = request.data.get('abstract', '').strip()
@@ -91,6 +94,8 @@ class PDFView(APIView):
     Calls ML service PDF endpoint and streams the file back to React.
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes   = [ScopedRateThrottle]
+    throttle_scope     = 'recommend'
 
     def post(self, request):
         abstract    = request.data.get('abstract', '').strip()
@@ -188,6 +193,8 @@ class FeedbackCreateView(generics.CreateAPIView):
 class JournalCatalogView(APIView):
     """Authenticated proxy for dataset-wide timeline journal autocomplete."""
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes   = [ScopedRateThrottle]
+    throttle_scope     = 'light'
 
     def get(self, request):
         try:
@@ -202,6 +209,8 @@ class JournalCatalogView(APIView):
 
 class JournalLinksView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes   = [ScopedRateThrottle]
+    throttle_scope     = 'light'
 
     def post(self, request):
         titles = request.data.get("titles", [])

@@ -385,6 +385,13 @@ def generate_pdf_endpoint(req: PDFRequest):
                                     focus=req.focus, prestige_weight=req.prestige_weight)
         explained = explain_strategy(strategy, search_text, df, search_mode=req.search_mode)
 
+        # The results page can hold thousands of journals; a PDF with all of them is unusable.
+        # Keep the best MAX_PDF_JOURNALS by final score (change this number if you want more).
+        MAX_PDF_JOURNALS = 50
+        _flat = sorted(((p, e) for p, v in explained.items() for e in v),
+                       key=lambda x: -float(x[1]["final_score"]))[:MAX_PDF_JOURNALS]
+        explained = {p: [e for q, e in _flat if q == p] for p in explained}
+
         # Inject trend data into each journal before PDF generation
         for plan_key, options in explained.items():
             for exp in options:

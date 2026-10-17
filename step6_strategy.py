@@ -69,21 +69,20 @@ def assign_plans(results: pd.DataFrame) -> dict:
     """
     Splits ranked results into three strategic plans.
     Guarantees at least 1 journal per plan using fallbacks.
-    Plan C excludes High-risk journals to avoid predatory recommendations.
+    All journals are included — risk level is shown as an advisory badge,
+    not used to exclude journals (the dataset is Scopus-vetted).
     """
     plan_a, plan_b, plan_c = [], [], []
 
     for _, row in results.iterrows():
         q = row["Quartile"]
-        r = row["risk_level"]
 
-        if q == "Q1" and r != "High":
+        if q == "Q1":
             plan_a.append(row)
-        elif q == "Q2" and r != "High":
+        elif q == "Q2":
             plan_b.append(row)
-        elif q in ["Q3", "Q4", "Unranked"] and r != "High":
+        elif q in ["Q3", "Q4", "Unranked"]:
             plan_c.append(row)
-        # High-risk journals are excluded from all plans
 
     # Fallback: if a plan is empty, pull the best unused ranked journal
     assigned_titles = (
@@ -94,7 +93,7 @@ def assign_plans(results: pd.DataFrame) -> dict:
 
     fallback_pool = [
         row for _, row in results.iterrows()
-        if row["Title"] not in assigned_titles and row["risk_level"] != "High"
+        if row["Title"] not in assigned_titles
     ]
 
     if not plan_a and fallback_pool:
