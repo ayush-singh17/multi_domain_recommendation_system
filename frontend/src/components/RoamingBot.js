@@ -65,7 +65,7 @@ const TOURS = {
       element: '.search-stats-strip',
       popover: {
         title: '📊 System Coverage',
-        description: '29,553 peer-reviewed journals from Scopus, DOAJ, and SciMago. Results are always split into 3 strategy tiers (Plan A / B / C). Hover any stat card to see the full explanation.',
+        description: '29,553 peer-reviewed journals from Scopus, DOAJ, and SciMago. Results come back as one ranked list that you can filter, sort and page through. Hover any stat card to see the full explanation.',
         side: 'top', align: 'start',
       },
     },
@@ -91,84 +91,146 @@ const TOURS = {
     {
       popover: {
         title: '📋 Your Results Are Ready',
-        description: 'Here\'s a tour of everything on this page — from filtering and tag chips to reading journal cards, understanding recommendations, downloading your PDF report, and comparing journals side by side.',
+        description: 'A quick tour of this page: the ranked list, filters and sorting, journal details, the timeline planner, comparing journals and your PDF report.',
       },
     },
     {
-      element: '.tag-filter-bar',
+      element: '.rv2-summary',
       popover: {
-        title: '🏷️ Quartile, Risk & MAHE Tags',
-        description: 'Click any tag to instantly filter results. Q1–Q4 filter by SciMago quartile ranking. "Low Risk" / "Medium Risk" filter by predatory safety score. "MAHE Approved" shows only journals from the official MAHE approved list. The count on each tag shows how many journals match.',
+        title: '📊 Search Summary',
+        description: 'How many journals matched your abstract, how many of the ones shown are Q1 or low risk, and the focus mode you used. High-risk journals are hidden automatically.',
         side: 'bottom', align: 'start',
       },
     },
     {
-      element: '.tag-filter-chip.tag-q1, .tag-filter-chip',
+      element: '.rv2-sidebar, .rv2-filters-btn',
       popover: {
-        title: '📌 What Do Quartiles Mean?',
-        description: 'Q1 = Top 25% journals by citation impact in their field (most competitive, highest visibility). Q2 = 25–50% (balanced impact & acceptance). Q3 = 50–75% (broader scope). Q4 = Bottom 25% (fastest acceptance, least prestige). Always target a spread across Plans A, B, and C.',
+        title: '🧰 Filters',
+        description: 'Tick several quartiles (Q1–Q4) or risk levels at once, show only MAHE-approved or open-access journals, or type a word to search inside the results. The numbers show how many journals each option would give you.',
+        side: 'right', align: 'start',
+      },
+    },
+    {
+      element: '.rv2-fieldset--note',
+      desktopOnly: true,
+      popover: {
+        title: '🎚️ Q3 / Q4 Limit',
+        description: 'By default the list keeps at most 2 Q3 and 2 Q4 journals so stronger options stay on top. Untick this to see every match in every quartile.',
+        side: 'right', align: 'start',
+      },
+    },
+    {
+      element: '.rv2-toolbar',
+      popover: {
+        title: '↕️ Sort & Page Size',
+        description: 'Results start in best-match order. Sort by SJR, H-index or title instead, and choose 10, 20 or 30 journals per page. Filters apply to the whole list before it is split into pages.',
         side: 'bottom', align: 'start',
       },
     },
     {
-      element: '.results-page-toolbar',
+      element: '.rv2-row',
       popover: {
-        title: '📋 Ranked Results & Pagination',
-        description: 'Browse eligible recommendations in descending score order. Choose 10, 20, or 30 results per page. Filters apply to the complete returned list before pagination.',
-        side: 'top', align: 'start',
+        title: '📖 A Result Row',
+        description: 'Each row shows the rank, journal and publisher, badges for quartile, risk, MAHE approval and open access, plus the match score, SJR and H-index. The coloured stripe on the left follows the quartile.',
+        side: 'bottom', align: 'start',
       },
     },
     {
-      element: '.jc-card',
+      element: '.rv2-actions',
       popover: {
-        title: '📖 Journal Card',
-        description: 'Each card shows: Match % (semantic relevance score), Quartile, Risk level, Impact Factor, CiteScore, SJR, H-index, estimated Time to Review, Open Access status, and APC cost. All data is sourced from Scopus, DOAJ, and SciMago.',
+        title: '⚡ Row Actions',
+        description: '“+ Timeline” adds the journal to your submission plan, “Compare” selects it for a side-by-side comparison (up to 3), and “Details” opens the full journal card.',
+        side: 'left', align: 'start',
+      },
+    },
+    {
+      element: '.rv2-details',
+      needsDetails: true,
+      popover: {
+        title: '🗂️ Journal Details',
+        description: 'The full card: SJR, H-index, estimated time to review, APC and open-access status, ISSN, categories, a 5-year citation trend and a link to the journal website.',
         side: 'top', align: 'start',
       },
     },
     {
       element: '.why-accordion',
+      needsDetails: true,
       popover: {
         title: '💡 Why Recommended',
-        description: 'Click "Why Recommended" on any journal card to expand the reasoning panel. It shows: matched semantic tokens from your abstract, a plain-language relevance explanation, risk signals (✓ green = good, ~ amber = caution, ✗ red = warning), and the exact BM25 + BERT score breakdown used to rank this journal.',
+        description: 'Expand this to see which terms from your abstract matched, a plain-language explanation of the relevance, and risk signals (✓ good, ~ caution, ■ warning).',
         side: 'top', align: 'start',
       },
     },
     {
-      element: '.results-subnav',
+      element: '.rv2-pager',
       popover: {
-        title: '🗓️ Submission Roadmap',
-        description: 'Open Timeline Calculator to search the journal dataset, select and reorder journals, and edit assumed decision times. Each next submission follows the previous decision and revision period. Selections stay in place when you filter results.',
-        side: 'top', align: 'start',
+        title: '📄 Pagination',
+        description: 'Move through the full ranked list page by page. Pages reset whenever you change a filter or the sort order.',
+        side: 'top', align: 'center',
       },
     },
     {
-      element: '.results-actions',
+      element: '.rv2-tabs',
+      popover: {
+        title: '🗓️ Results & Timeline Planner',
+        description: 'Switch between the ranked list and the Timeline planner. Journals you add with “+ Timeline” stay in the planner while you filter or page through results.',
+        side: 'bottom', align: 'start',
+      },
+    },
+    {
+      element: '.rv2-tl-controls',
+      view: 'timeline',
+      popover: {
+        title: '🧭 Timeline Planner',
+        description: 'Add journals here or from the results, put them in the order you would try them, and edit the assumed decision time for each. A chart shows when each submission starts and when a decision is expected. These are planning assumptions, not predictions.',
+        side: 'bottom', align: 'start',
+      },
+    },
+    {
+      element: '.rv2-summary-actions',
       popover: {
         title: '📥 Download PDF Report',
-        description: 'The "Download PDF Report" button generates a formatted, shareable PDF of all your results — including journal details, match scores, and your 3-tier strategy. Great for sharing with co-authors or advisors. PDF generation takes 5–10 seconds.',
-        side: 'top', align: 'end',
+        description: 'Generates a formatted, shareable PDF with your top-ranked journals, match scores and risk details. Handy for sharing with co-authors or advisors. It can take 5–10 seconds.',
+        side: 'bottom', align: 'end',
       },
     },
     {
-      element: '.btn-compare, .btn-compare-active',
+      element: '.rv2-compare',
       popover: {
         title: '⇄ Compare Journals',
-        description: 'Click "Compare" on up to 3 journal cards to add them to the comparison bar at the bottom. Then click "Compare Selected" to see a side-by-side breakdown of all their metrics — ideal for choosing between similarly ranked journals.',
-        side: 'top', align: 'start',
+        description: 'Tick “Compare” on up to 3 journals. A bar appears at the bottom — press “Compare now” for a side-by-side breakdown of their metrics.',
+        side: 'left', align: 'start',
       },
     },
   ],
 };
 
+// ── Helpers for the results-page demo (it opens panels and switches tabs as it goes) ──
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+const isVisible = el => {
+  if (!el) return false;
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.height > 0 && r.right > 0 && r.left < window.innerWidth;
+};
+// First selector (comma + space separated) whose element is on screen; else the first that exists.
+const pickElement = selectors => {
+  const list = selectors.split(', ').map(sel => document.querySelector(sel));
+  return list.find(isVisible) || list.find(Boolean) || null;
+};
+const clickTab = name => {
+  const tab = [...document.querySelectorAll('.rv2-tabs [role="tab"]')]
+    .find(b => b.textContent.trim().toLowerCase().startsWith(name));
+  if (tab && tab.getAttribute('aria-selected') !== 'true') tab.click();
+};
+
 const HELP_CONTENT = [
   { icon: '📄', title: 'Abstract Mode',      desc: 'Paste 100–250 words. BERT reads full semantic meaning for the most accurate matches.' },
   { icon: '🏷️', title: 'Keyword Mode',       desc: 'Add up to 10 topics. They\'re expanded into semantic context automatically before ranking.' },
-  { icon: '📋', title: 'Ranked Results',     desc: 'Browse the full returned recommendation list in score order with 10, 20, or 30 journals per page.' },
-  { icon: '🔖', title: 'Q1–Q4 Tag Filters',  desc: 'Filter results by SciMago quartile. Q1 = top 25% impact. Click a tag chip on the results page.' },
-  { icon: '💡', title: 'Why Recommended',    desc: 'Expand the accordion on any journal card to see matched tokens, relevance reasoning, and score breakdown.' },
-  { icon: '📥', title: 'PDF Report',         desc: 'Download a formatted PDF of your full 3-tier strategy to share with co-authors or advisors.' },
-  { icon: '🗓️', title: 'Submission Roadmap', desc: 'Choose journals and order your own sequence, with editable decision and revision time estimates.' },
+  { icon: '📋', title: 'Ranked Results',     desc: 'Browse the full recommendation list best match first, with 10, 20 or 30 journals per page and a sort menu.' },
+  { icon: '🔖', title: 'Filters',            desc: 'Use the filter panel to pick quartiles (Q1 = top 25% impact), risk level, MAHE approval or open access, or to search within results.' },
+  { icon: '💡', title: 'Why Recommended',    desc: 'Press Details on a result, then expand “Why Recommended” to see matched terms, relevance reasoning and the score breakdown.' },
+  { icon: '📥', title: 'PDF Report',         desc: 'Download a formatted PDF of your top-ranked journals to share with co-authors or advisors.' },
+  { icon: '🗓️', title: 'Timeline Planner',   desc: 'Press “+ Timeline” on any result, order your sequence, and edit the assumed decision and revision times.' },
   { icon: '📁', title: 'History Tab',        desc: 'Every search is saved. Revisit past results anytime from the History tab in the navbar.' },
 ];
 
@@ -279,25 +341,50 @@ export default function RoamingBot() {
   }, [pos.y]);
 
   // ── Driver.js tour ──
-  const startDemo = useCallback(() => {
+  const startDemo = useCallback(async () => {
     setMenu(false);
-    const steps = TOURS[location.pathname] || TOURS['/'];
-    const validSteps = steps
-      .filter(s => {
-        // Steps with no element (intro popovers) are always included
-        if (!s.element) return true;
-        // Steps with an element are only included if at least one selector exists in the DOM
-        return s.element.split(', ').some(sel => document.querySelector(sel));
-      })
-      .map(s => {
-        // No element → pass through untouched (Driver.js centres these as intro slides)
-        if (!s.element) return s;
-        // Pick the first selector that actually exists in the DOM
-        const el = s.element.split(', ').find(sel => document.querySelector(sel));
-        return { ...s, element: el };
-      });
+    const spec = TOURS[location.pathname] || TOURS['/'];
+    const onResults = location.pathname === '/results';
+    const opened = { details: false };
 
-    const driverObj = driver({
+    // Results page: some steps need a panel opened or another tab shown first.
+    const prepare = async step => {
+      if (!onResults || !step) return;
+      clickTab(step.view === 'timeline' ? 'timeline' : 'results');
+      if (step.needsDetails && !document.querySelector('.rv2-details')) {
+        const toggle = document.querySelector('.rv2-row .rv2-btn--ghost[aria-expanded="false"]');
+        if (toggle) { toggle.click(); opened.details = true; }
+      }
+      await wait(350);
+    };
+    const restore = () => {
+      if (!onResults) return;
+      clickTab('results');
+      if (opened.details) document.querySelector('.rv2-row .rv2-btn--ghost[aria-expanded="true"]')?.click();
+    };
+
+    const steps = spec
+      .filter(s => {
+        if (!s.element) return true;                                   // intro slides
+        if (onResults && (s.needsDetails || s.view === 'timeline')) return true;   // appear after we prepare them
+        const el = pickElement(s.element);
+        return s.desktopOnly ? isVisible(el) : Boolean(el);
+      })
+      .map(s => !s.element ? s
+        : onResults ? { ...s, element: () => pickElement(s.element) }
+        : { ...s, element: s.element.split(', ').find(sel => document.querySelector(sel)) });
+
+    let driverObj;
+    const stepsWithHooks = onResults ? steps.map((s, i) => ({
+      ...s,
+      popover: {
+        ...s.popover,
+        onNextClick: async () => { await prepare(steps[i + 1]); driverObj.moveNext(); },
+        onPrevClick: async () => { await prepare(steps[i - 1]); driverObj.movePrevious(); },
+      },
+    })) : steps;
+
+    driverObj = driver({
       showProgress: true,
       animate: true,
       smoothScroll: true,
@@ -306,8 +393,8 @@ export default function RoamingBot() {
       nextBtnText: 'Next →',
       prevBtnText: '← Back',
       doneBtnText: 'Got it! 🎉',
-      onDestroyStarted: () => { driverObj.destroy(); },
-      steps: validSteps,
+      onDestroyStarted: () => { restore(); driverObj.destroy(); },
+      steps: stepsWithHooks,
     });
     driverObj.drive();
   }, [location.pathname]);
