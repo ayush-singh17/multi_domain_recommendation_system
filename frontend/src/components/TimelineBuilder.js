@@ -3,17 +3,51 @@ import API from '../api/axios';
 import { buildSequence, journalKey } from '../utils/results';
 
 function today() {
-  const date = new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 function dateAfter(start, weeks) {
   if (!start) return 'Choose a start date';
   const date = new Date(`${start}T12:00:00`);
   date.setDate(date.getDate() + Math.round(weeks * 7));
-  return Number.isNaN(date.getTime()) ? 'Choose a valid date' : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return Number.isNaN(date.getTime()) ? 'Choose a valid date'
+    : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+const qClass = q => 'rv2-gantt-bar--' + String(q || 'unranked').toLowerCase();
+
+function Gantt({ sequence, revisionWeeks }) {
+  const total = Math.max(1, sequence[sequence.length - 1].endWeek);
+  const step = [4, 8, 13, 26, 52, 104, 208].find(s => total / s <= 8) || 208;
+  const ticks = [];
+  for (let w = 0; w <= total; w += step) ticks.push(w);
+  const pct = w => `${(w / total) * 100}%`;
+  return (
+    <div className="rv2-gantt" aria-label="Submission timeline chart">
+      <div className="rv2-gantt-row rv2-gantt-row--axis">
+        <span />
+        <div className="rv2-gantt-axis">
+          {ticks.map(w => <span key={w} style={{ left: pct(w) }}>wk {w}</span>)}
+        </div>
+      </div>
+      {sequence.map((j, i) => (
+        <div className="rv2-gantt-row" key={journalKey(j)}>
+          <span className="rv2-gantt-label" title={j.title}>{j.position}. {j.title}</span>
+          <div className="rv2-gantt-track">
+            {ticks.map(w => <i key={w} className="rv2-gantt-grid" style={{ left: pct(w) }} />)}
+            <div className={'rv2-gantt-bar ' + qClass(j.quartile)} style={{ left: pct(j.startWeek), width: pct(j.endWeek - j.startWeek) }}>
+              {j.decisionWeeks}w
+            </div>
+            {i < sequence.length - 1 && Number(revisionWeeks) > 0 && (
+              <div className="rv2-gantt-gap" title="Revision / reformatting" style={{ left: pct(j.endWeek), width: pct(Number(revisionWeeks)) }} />
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
-export default function TimelineBuilder({ active, journals, onChange, onAdd }) {
+export default function TimelineBuilder({ active, journals, onChange, onAdd, onGoToResults }) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [matches, setMatches] = useState(0);
@@ -48,47 +82,108 @@ export default function TimelineBuilder({ active, journals, onChange, onAdd }) {
       onChange(journals.map((journal, i) => i === index ? { ...journal, decisionWeeks: number } : journal));
     }
   };
-  return <div className="timeline-builder">
-    <h2>Build your submission timeline</h2>
-    <p>Select journals from the dataset, then arrange the order you would try them. Add as many as you need.</p>
-    <label className="timeline-search-label" htmlFor="timeline-search">Journal name or ISSN</label>
-    <input id="timeline-search" type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Type at least 2 characters, e.g. Computers in Biology…" autoComplete="off" />
-    <div role="status" className="timeline-search-status">
-      {loading ? 'Searching journals…' : error || (query.trim().length >= 2 ? `${matches} matches${matches > suggestions.length ? ` · showing ${suggestions.length}; narrow your search to find another journal` : ''}` : 'Search includes journals beyond your current recommendations.')}
-    </div>
-    {suggestions.length > 0 && <ul className="timeline-suggestions">
-      {suggestions.map(journal => {
-        const added = journals.some(j => journalKey(j) === journalKey(journal));
-        return <li key={journalKey(journal)}><div><strong>{journal.title}</strong><small>{journal.quartile || 'Unranked'} · {journal.issn || 'No ISSN listed'}</small></div><button type="button" className="btn-secondary" disabled={added} onClick={() => onAdd(journal)}>{added ? 'Added' : 'Add'}</button></li>;
-      })}
-    </ul>}
+  const first = sequence[0];
+  const last = sequence[sequence.length - 1];
 
-    <div className="timeline-settings">
-      <label>First submission date <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></label>
-      <label>Revision / reformatting between submissions (weeks) <input type="number" min="0" max="104" step="1" value={revisionWeeks} onChange={e => {
-        const value = Number(e.target.value);
-        if (Number.isFinite(value) && value >= 0 && value <= 104) setRevisionWeeks(value);
-      }} /></label>
-    </div>
-    <p className="timeline-assumptions">This is a sequential planning scenario: the next submission starts after the previous journal declines and your revision period ends. Decision times are editable assumptions based on quartile, not publisher promises or acceptance predictions. Publication-time data, where available, is shown separately because it is not a time-to-decision measurement.</p>
-    {journals.length === 0 ? <div className="timeline-empty">Add journals above or use “Add to timeline” in Results to begin.</div> : <>
-      <div className="timeline-sequence-header"><h3>Your sequence ({journals.length})</h3><button type="button" className="btn-secondary" onClick={() => onChange([])}>Clear sequence</button></div>
-      <ol className="timeline-sequence">
-        {sequence.map((journal, index) => <li key={journalKey(journal)}>
-          <div className="timeline-journal-heading"><span className="timeline-step">{index + 1}</span><div><strong>{journal.title}</strong><small>{journal.quartile || 'Unranked'} · {journal.issn}</small></div></div>
-          <div className="timeline-row-controls">
-            <label>Assumed decision time (weeks) <input aria-label={`Decision weeks for ${journal.title}`} type="number" min="1" max="520" step="1" value={journal.decisionWeeks} onChange={e => updateWeeks(index, e.target.value)} /></label>
-            <div className="timeline-order-buttons">
-              <button type="button" disabled={index === 0} aria-label={`Move ${journal.title} earlier`} onClick={() => move(index, -1)}>↑ Earlier</button>
-              <button type="button" disabled={index === journals.length - 1} aria-label={`Move ${journal.title} later`} onClick={() => move(index, 1)}>↓ Later</button>
-              <button type="button" aria-label={`Remove ${journal.title}`} onClick={() => onChange(journals.filter((_, i) => i !== index))}>Remove</button>
+  return (
+    <div className="rv2-tl">
+      <div className="rv2-tl-controls">
+        <div className="rv2-tl-search">
+          <label htmlFor="rv2-tl-search">Add a journal by name or ISSN</label>
+          <input id="rv2-tl-search" className="rv2-input" type="search" value={query} autoComplete="off"
+            onChange={e => setQuery(e.target.value)} placeholder="Type at least 2 characters, e.g. Computers in Biology…" />
+          <p className="rv2-hint" role="status">
+            {loading ? 'Searching journals…' : error || (query.trim().length >= 2
+              ? `${matches} matches${matches > suggestions.length ? ` · showing ${suggestions.length}; narrow your search to find another` : ''}`
+              : 'Or press “+ Timeline” on any journal in the Results tab.')}
+          </p>
+          {suggestions.length > 0 && (
+            <ul className="rv2-suggest">
+              {suggestions.map(journal => {
+                const added = journals.some(j => journalKey(j) === journalKey(journal));
+                return (
+                  <li key={journalKey(journal)}>
+                    <div><strong>{journal.title}</strong><small>{journal.quartile || 'Unranked'} · {journal.issn || 'No ISSN listed'}</small></div>
+                    <button type="button" className="rv2-btn rv2-btn--ghost" disabled={added} onClick={() => onAdd(journal)}>{added ? 'Added' : 'Add'}</button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+        <label className="rv2-field">First submission date
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+        </label>
+        <label className="rv2-field">Revision gap between submissions (weeks)
+          <input type="number" min="0" max="104" step="1" value={revisionWeeks} onChange={e => {
+            const value = Number(e.target.value);
+            if (Number.isFinite(value) && value >= 0 && value <= 104) setRevisionWeeks(value);
+          }} />
+        </label>
+      </div>
+
+      {journals.length === 0 ? (
+        <div className="rv2-empty">
+          <p><strong>Your timeline is empty.</strong></p>
+          <p>Search for a journal above, or go to Results and press “+ Timeline” on the journals you want to plan around.</p>
+          <button type="button" className="rv2-btn rv2-btn--primary" onClick={onGoToResults}>Browse results</button>
+        </div>
+      ) : (
+        <>
+          <div className="rv2-tl-summary">
+            <div><span>Journals in sequence</span><strong>{journals.length}</strong></div>
+            <div><span>Fastest: accepted at #1</span><strong>Week {first.endWeek}</strong><small>{dateAfter(startDate, first.endWeek)}</small></div>
+            <div><span>Slowest: all earlier declined</span><strong>Week {last.endWeek}</strong><small>{dateAfter(startDate, last.endWeek)}</small></div>
+          </div>
+
+          <div className="rv2-tl-panel">
+            <div className="rv2-tl-panel-head">
+              <h3>Timeline</h3>
+              <button type="button" className="rv2-link-btn" onClick={() => onChange([])}>Clear all</button>
+            </div>
+            <Gantt sequence={sequence} revisionWeeks={revisionWeeks} />
+            <div className="rv2-gantt-legend">
+              <span><i className="rv2-gantt-bar--q1" /> Q1</span><span><i className="rv2-gantt-bar--q2" /> Q2</span>
+              <span><i className="rv2-gantt-bar--q3" /> Q3</span><span><i className="rv2-gantt-bar--q4" /> Q4</span>
+              <span><i className="rv2-gantt-gap" /> Revision gap</span>
             </div>
           </div>
-          <div className="timeline-window"><span>Submit: <strong>{dateAfter(startDate, journal.startWeek)}</strong> (week {journal.startWeek})</span><span>Estimated decision: <strong>{dateAfter(startDate, journal.endWeek)}</strong> (week {journal.endWeek})</span></div>
-          {Number(journal.weeks_to_publish) > 0 && <small className="timeline-reference">Dataset submission-to-publication reference: {journal.weeks_to_publish} weeks. This value is not used as a rejection / review duration.</small>}
-        </li>)}
-      </ol>
-      <div className="timeline-total" aria-live="polite">If every earlier submission is declined, the estimated decision from the last journal is at <strong>week {sequence[sequence.length - 1].endWeek}</strong> — {dateAfter(startDate, sequence[sequence.length - 1].endWeek)}. Publication after acceptance is additional and is not included.</div>
-    </>}
-  </div>;
+
+          <ol className="rv2-tl-list">
+            {sequence.map((journal, index) => (
+              <li key={journalKey(journal)} className="rv2-tl-item">
+                <span className="rv2-step">{index + 1}</span>
+                <div className="rv2-tl-info">
+                  <strong>{journal.title}</strong>
+                  <small>{journal.quartile || 'Unranked'} · {journal.issn}</small>
+                </div>
+                <label className="rv2-weeks">Decision time (weeks)
+                  <input aria-label={`Decision weeks for ${journal.title}`} type="number" min="1" max="520" step="1"
+                    value={journal.decisionWeeks} onChange={e => updateWeeks(index, e.target.value)} />
+                </label>
+                <div className="rv2-tl-dates">
+                  <span>Submit <b>{dateAfter(startDate, journal.startWeek)}</b></span>
+                  <span>Decision <b>{dateAfter(startDate, journal.endWeek)}</b></span>
+                </div>
+                <div className="rv2-tl-buttons">
+                  <button type="button" disabled={index === 0} aria-label={`Move ${journal.title} earlier`} onClick={() => move(index, -1)}>↑</button>
+                  <button type="button" disabled={index === journals.length - 1} aria-label={`Move ${journal.title} later`} onClick={() => move(index, 1)}>↓</button>
+                  <button type="button" aria-label={`Remove ${journal.title}`} onClick={() => onChange(journals.filter((_, i) => i !== index))}>Remove</button>
+                </div>
+                {Number(journal.weeks_to_publish) > 0 && (
+                  <small className="rv2-tl-ref">Dataset submission-to-publication reference: {journal.weeks_to_publish} weeks (not used as a decision time).</small>
+                )}
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+
+      <p className="rv2-tl-note">
+        Planning scenario only: the next submission starts after the previous journal declines and your revision gap ends.
+        Decision times are editable assumptions based on quartile, not publisher promises or acceptance predictions.
+        Publication after acceptance is additional and not included.
+      </p>
+    </div>
+  );
 }
